@@ -22,8 +22,14 @@ void main() {
           BlocProvider(create: (_) => LoginCubit(repository)),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            AuthLocalizations.delegate,
+          ],
+          supportedLocales: {
+            ...AppLocalizations.supportedLocales,
+            ...AuthLocalizations.supportedLocales,
+          }.toList(),
           home: const LoginPage(),
         ),
       ),

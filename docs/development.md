@@ -26,16 +26,27 @@ Use `flutter run -d <device-id>` to select a device.
 
 ## Localization
 
-Localization belongs to `core-ui`:
+Shared localization belongs to `core-ui`, while feature-specific localization
+belongs to the plugin that owns the feature:
 
 - `core-ui/lib/src/localization/l10n/app_en.arb`
 - `core-ui/lib/src/localization/l10n/app_id.arb`
 - `core-ui/l10n.yaml`
+- `plugins/<plugin>/lib/src/localization/l10n/<plugin>_en.arb`
+- `plugins/<plugin>/lib/src/localization/l10n/<plugin>_id.arb`
+- `plugins/<plugin>/l10n.yaml`
 
-Add every message key to both ARB files, then generate the Dart classes:
+Add every message key to both ARB files in the owning package, then generate
+the Dart classes:
 
 ```bash
 cd core-ui
+flutter gen-l10n
+
+cd ../plugins/auth
+flutter gen-l10n
+
+cd ../catalog
 flutter gen-l10n
 ```
 
@@ -110,6 +121,8 @@ production keystore before distributing an Android release build.
 ```bash
 flutter pub get
 (cd core-ui && flutter gen-l10n)
+(cd plugins/auth && flutter gen-l10n)
+(cd plugins/catalog && flutter gen-l10n)
 (cd plugins/auth && dart run build_runner build --delete-conflicting-outputs)
 (cd plugins/catalog && dart run build_runner build --delete-conflicting-outputs)
 ```

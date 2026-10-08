@@ -6,6 +6,7 @@ import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/domain/entities/category.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/domain/repositories/category_repository.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/presentation/picker/category_picker.dart';
+import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 
 void main() {
   testWidgets('opens as a page and returns the selected category', (
@@ -15,8 +16,14 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: [
+          ...AppLocalizations.localizationsDelegates,
+          CatalogLocalizations.delegate,
+        ],
+        supportedLocales: {
+          ...AppLocalizations.supportedLocales,
+          ...CatalogLocalizations.supportedLocales,
+        }.toList(),
         home: Builder(
           builder: (context) => Scaffold(
             body: FilledButton(

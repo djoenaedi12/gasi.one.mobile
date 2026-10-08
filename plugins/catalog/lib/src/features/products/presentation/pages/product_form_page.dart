@@ -4,8 +4,8 @@ import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/presentation/picker/category_picker.dart';
-import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 import 'package:gasione_plugin_catalog/src/features/products/domain/entities/product.dart';
+import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 
 typedef ProductFormSubmit = Future<ProductSubmissionResult> Function(
   ProductDraft draft,

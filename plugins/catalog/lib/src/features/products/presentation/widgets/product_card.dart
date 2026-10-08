@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
-import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 import 'package:gasione_plugin_catalog/src/features/products/domain/entities/product.dart';
+import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({

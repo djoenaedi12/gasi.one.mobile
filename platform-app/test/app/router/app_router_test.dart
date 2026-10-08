@@ -41,8 +41,16 @@ void main() {
           BlocProvider(create: (_) => LocaleCubit(preferences)),
         ],
         child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            ...authPlugin.localizationsDelegates,
+            ...pluginRegistry.localizationsDelegates,
+          ],
+          supportedLocales: {
+            ...AppLocalizations.supportedLocales,
+            ...authPlugin.supportedLocales,
+            ...pluginRegistry.supportedLocales,
+          }.toList(),
           routerConfig: router.router,
         ),
       ),

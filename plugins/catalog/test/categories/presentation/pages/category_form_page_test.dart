@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/presentation/pages/category_form_page.dart';
+import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 
 void main() {
   testWidgets('binds API errors to category fields without a snackbar', (
@@ -10,8 +11,14 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: [
+          ...AppLocalizations.localizationsDelegates,
+          CatalogLocalizations.delegate,
+        ],
+        supportedLocales: {
+          ...AppLocalizations.supportedLocales,
+          ...CatalogLocalizations.supportedLocales,
+        }.toList(),
         home: CategoryFormPage(
           onSubmit: (_) async => const CategorySubmissionResult(
             success: false,

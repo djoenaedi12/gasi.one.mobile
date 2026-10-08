@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
-import 'package:gasione_core_ui/gasione_core_ui.dart';
-import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/data/datasources/category_remote_data_source.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/data/repositories/category_repository_impl.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/domain/repositories/category_repository.dart';
@@ -14,6 +12,7 @@ import 'package:gasione_plugin_catalog/src/features/products/data/repositories/p
 import 'package:gasione_plugin_catalog/src/features/products/domain/repositories/product_repository.dart';
 import 'package:gasione_plugin_catalog/src/features/products/presentation/cubits/products_cubit.dart';
 import 'package:gasione_plugin_catalog/src/features/products/presentation/pages/product_list_page.dart';
+import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 
 abstract final class CatalogRoutes {
   static const products = '/products';

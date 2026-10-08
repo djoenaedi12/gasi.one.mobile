@@ -1,7 +1,7 @@
 export 'src/auth_plugin.dart';
-export 'src/localization/l10n/auth_localizations.dart';
 export 'src/domain/entities/auth_user.dart';
 export 'src/domain/repositories/auth_repository.dart';
+export 'src/localization/l10n/auth_localizations.dart';
 export 'src/presentation/cubits/auth_cubit.dart';
 export 'src/presentation/cubits/auth_state.dart';
 export 'src/presentation/cubits/login_cubit.dart';

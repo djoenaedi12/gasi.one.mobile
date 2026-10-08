@@ -74,10 +74,12 @@ class _MyAppState extends State<MyApp> {
                   locale: locale,
                   localizationsDelegates: [
                     ...AppLocalizations.localizationsDelegates,
+                    ...dependencies.authPlugin.localizationsDelegates,
                     ...dependencies.pluginRegistry.localizationsDelegates,
                   ],
                   supportedLocales: {
                     ...AppLocalizations.supportedLocales,
+                    ...dependencies.authPlugin.supportedLocales,
                     ...dependencies.pluginRegistry.supportedLocales,
                   }.toList(),
                   routerConfig: _router.router,

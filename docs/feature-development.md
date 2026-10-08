@@ -37,8 +37,8 @@ Create only the layers and directories the feature needs.
 | --- | --- |
 | `core-api` | `AppPlugin`, routes, menus, result/failure, CRUD contracts, pagination value types |
 | `core-starter` | API client, storage, failure mapping, device services, reusable Cubit orchestration |
-| `core-ui` | Design system, shared presentation helpers, English and Indonesian localization |
-| `plugins/*` | Business domain, data access, presentation, routes, menus, and dependency assembly |
+| `core-ui` | Design system, shared presentation helpers, and shared localization |
+| `plugins/*` | Business domain, feature localization, data access, presentation, routes, menus, and dependency assembly |
 | `platform-app` | Bootstrap, app-wide dependencies, router, theme preference, and plugin activation |
 
 The dependency rules are:
@@ -164,7 +164,7 @@ flutter analyze
 - Public integration occurs through `AppPlugin` and the package barrel.
 - Domain contracts are separate from data implementations.
 - Technical errors become typed `Failure` values.
-- User-facing text is localized through `core-ui`.
+- Shared text is localized through `core-ui`; feature-specific text is localized by its owning plugin.
 - Routes and menus are contributed by the plugin.
 - Tests and generated files are current.
 - Formatting, analyzer, tests, and the mobile build pass.

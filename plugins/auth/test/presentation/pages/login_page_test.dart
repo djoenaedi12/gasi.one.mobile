@@ -5,6 +5,7 @@ import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_auth/src/domain/entities/auth_user.dart';
 import 'package:gasione_plugin_auth/src/domain/repositories/auth_repository.dart';
+import 'package:gasione_plugin_auth/src/localization/l10n/auth_localizations.dart';
 import 'package:gasione_plugin_auth/src/presentation/cubits/auth_cubit.dart';
 import 'package:gasione_plugin_auth/src/presentation/cubits/auth_state.dart';
 import 'package:gasione_plugin_auth/src/presentation/cubits/login_cubit.dart';
@@ -23,8 +24,14 @@ void main() {
           BlocProvider(create: (_) => LoginCubit(repository)),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            AuthLocalizations.delegate,
+          ],
+          supportedLocales: {
+            ...AppLocalizations.supportedLocales,
+            ...AuthLocalizations.supportedLocales,
+          }.toList(),
           home: const LoginPage(
             initialUsername: 'emilys',
             initialPassword: 'emilyspass',
@@ -111,8 +118,14 @@ Future<void> _pumpLoginPage(
         BlocProvider(create: (_) => LoginCubit(repository)),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: [
+          ...AppLocalizations.localizationsDelegates,
+          AuthLocalizations.delegate,
+        ],
+        supportedLocales: {
+          ...AppLocalizations.supportedLocales,
+          ...AuthLocalizations.supportedLocales,
+        }.toList(),
         home: const LoginPage(
           initialUsername: 'emilys',
           initialPassword: 'emilyspass',

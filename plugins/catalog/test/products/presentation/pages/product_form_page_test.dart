@@ -7,6 +7,7 @@ import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_catalog/src/features/products/domain/entities/product.dart';
 import 'package:gasione_plugin_catalog/src/features/products/presentation/pages/product_form_page.dart';
+import 'package:gasione_plugin_catalog/src/localization/l10n/catalog_localizations.dart';
 
 void main() {
   testWidgets(
@@ -17,8 +18,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            CatalogLocalizations.delegate,
+          ],
+          supportedLocales: {
+            ...AppLocalizations.supportedLocales,
+            ...CatalogLocalizations.supportedLocales,
+          }.toList(),
           home: Builder(
             builder: (context) => Scaffold(
               body: FilledButton(
@@ -86,8 +93,14 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: [
+          ...AppLocalizations.localizationsDelegates,
+          CatalogLocalizations.delegate,
+        ],
+        supportedLocales: {
+          ...AppLocalizations.supportedLocales,
+          ...CatalogLocalizations.supportedLocales,
+        }.toList(),
         home: ProductFormPage(
           pickerLauncher: const _PickerLauncher(),
           onSubmit: (_) async => const ProductSubmissionResult(
