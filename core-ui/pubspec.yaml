@@ -1,0 +1,26 @@
+name: gasione_core_ui
+description: GASI One design system, localization, and shared UI utilities.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  gasione_core_api: ^0.1.0
+  intl: ^0.20.3
+  skeletonizer: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  generate: true

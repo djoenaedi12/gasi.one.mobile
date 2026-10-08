@@ -1,0 +1,18 @@
+name: gasione_flutter_workspace
+description: GASI One Flutter workspace.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+
+workspace:
+  - core-api
+  - core-starter
+  - core-ui
+  - platform-app
+  - plugins/auth
+  - plugins/catalog
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
