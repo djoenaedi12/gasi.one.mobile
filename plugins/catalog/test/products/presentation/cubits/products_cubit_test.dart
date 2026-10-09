@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_plugin_catalog/src/features/products/domain/entities/product.dart';
@@ -8,7 +10,10 @@ void main() {
   test(
     'loads and applies create, update, and delete results locally',
     () async {
-      final cubit = ProductsCubit(_FakeProductRepository(productCount: 1));
+      final cubit = ProductsCubit(
+        _FakeProductRepository(productCount: 1),
+        reloadAfterMutation: false,
+      );
       addTearDown(cubit.close);
 
       await cubit.load();
@@ -93,6 +98,48 @@ void main() {
     expect(cubit.state.loadMoreError, isNull);
     expect(repository.requestedSkips, [0, 10, 10]);
   });
+  test(
+    'persistent delete reloads offset pagination without skipping records',
+    () async {
+      final repository = _PersistentRepository();
+      final cubit = ProductsCubit(repository);
+      addTearDown(cubit.close);
+      await cubit.load();
+      await cubit.delete(cubit.state.products.first);
+      await cubit.loadMore();
+      expect(
+        cubit.state.products.map((p) => p.id),
+        List.generate(11, (i) => i + 2),
+      );
+      expect(cubit.state.hasMore, isFalse);
+    },
+  );
+  test('load ignores responses from a closed Cubit', () async {
+    final repository = _DelayedProductRepository();
+    final cubit = ProductsCubit(repository);
+    final pending = cubit.load();
+    await cubit.close();
+    repository.requests.single.complete(
+      Success(PaginatedPage(items: const [], total: 0, offset: 0, limit: 10)),
+    );
+    await pending;
+  });
+  test('a newer product load supersedes an older request', () async {
+    final repository = _DelayedProductRepository();
+    final cubit = ProductsCubit(repository);
+    addTearDown(cubit.close);
+    final old = cubit.load();
+    final recent = cubit.load();
+    repository.requests.last.complete(
+      Success(PaginatedPage(items: const [], total: 0, offset: 0, limit: 10)),
+    );
+    await recent;
+    repository.requests.first.complete(
+      Success(PaginatedPage(items: const [], total: 100, offset: 0, limit: 10)),
+    );
+    await old;
+    expect(cubit.state.total, 0);
+  });
 }
 
 class _FakeProductRepository implements ProductRepository {
@@ -160,5 +207,52 @@ class _FakeProductRepository implements ProductRepository {
       stock: draft.stock,
       thumbnailUrl: '',
     );
+  }
+}
+
+class _PersistentRepository extends _FakeProductRepository {
+  _PersistentRepository() : super(productCount: 0);
+  final items = List.generate(
+    12,
+    (i) => Product(
+      id: i + 1,
+      title: 'Product',
+      description: '',
+      category: '',
+      price: 1,
+      stock: 1,
+      thumbnailUrl: '',
+    ),
+  );
+  @override
+  Future<Result<PaginatedPage<Product>>> getProducts({
+    required int limit,
+    required int skip,
+  }) async => Success(
+    PaginatedPage(
+      items: items.skip(skip).take(limit).toList(),
+      total: items.length,
+      offset: skip,
+      limit: limit,
+    ),
+  );
+  @override
+  Future<Result<void>> deleteProduct(int id) async {
+    items.removeWhere((p) => p.id == id);
+    return const Success(null);
+  }
+}
+
+class _DelayedProductRepository extends _FakeProductRepository {
+  _DelayedProductRepository() : super(productCount: 0);
+  final requests = <Completer<Result<PaginatedPage<Product>>>>[];
+  @override
+  Future<Result<PaginatedPage<Product>>> getProducts({
+    required int limit,
+    required int skip,
+  }) {
+    final pending = Completer<Result<PaginatedPage<Product>>>();
+    requests.add(pending);
+    return pending.future;
   }
 }

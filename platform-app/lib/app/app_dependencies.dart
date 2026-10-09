@@ -40,14 +40,14 @@ class AppDependencies {
     ]);
     final authPlugin = await AuthPlugin.create(
       apiClient: apiClient,
-      tokenStorage: tokenStorage,
       loginActionsBuilder: (_) => const AppSettingsActions(),
       initialUsername: AppConfig.demoUsername,
       initialPassword: AppConfig.demoPassword,
     );
     apiClient.setSessionExpiredHandler(authPlugin.authCubit.sessionExpired);
     final pluginRegistry = PluginRegistry([
-      CatalogPlugin(apiClient: apiClient),
+      // DummyJSON simulates product mutations without persisting them.
+      CatalogPlugin(apiClient: apiClient, reloadProductsAfterMutation: false),
     ]);
 
     return AppDependencies._(
@@ -80,6 +80,7 @@ class AppDependencies {
       authCubit.close(),
       notificationService.dispose(),
     ]);
+    pluginRegistry.dispose();
     apiClient.close();
   }
 }

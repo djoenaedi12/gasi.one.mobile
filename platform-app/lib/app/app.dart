@@ -12,16 +12,16 @@ import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_auth/gasione_plugin_auth.dart';
 
-class MyApp extends StatefulWidget {
-  const MyApp({required this.dependencies, super.key});
+class GasiOneApp extends StatefulWidget {
+  const GasiOneApp({required this.dependencies, super.key});
 
   final AppDependencies dependencies;
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<GasiOneApp> createState() => _GasiOneAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _GasiOneAppState extends State<GasiOneApp> {
   late final AppRouter _router;
 
   @override

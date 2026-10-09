@@ -1,4 +1,4 @@
-import 'package:gasione_core_starter/gasione_core_starter.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_plugin_auth/src/domain/entities/auth_user.dart';
 
 abstract interface class AuthRepository {

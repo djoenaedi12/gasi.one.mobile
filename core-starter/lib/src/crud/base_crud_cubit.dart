@@ -18,6 +18,7 @@ class BaseCrudCubit<Entity, Id, CreateDraft, UpdateDraft>
     required super.repository,
     required QueryRequest initialQuery,
     required super.idOf,
+    super.reloadAfterMutation,
   }) : super(
          initialPageQuery: initialQuery,
          mapPage: (result) => CrudPageData(

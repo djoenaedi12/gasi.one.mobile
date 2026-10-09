@@ -5,50 +5,47 @@ import 'package:gasione_plugin_catalog/src/features/categories/domain/repositori
 import 'package:gasione_plugin_catalog/src/features/categories/presentation/cubits/categories_cubit.dart';
 
 void main() {
-  test(
-    'loads ten categories per page and applies CRUD results locally',
-    () async {
-      final repository = _FakeCategoryRepository(count: 12);
-      final cubit = CategoriesCubit(repository);
-      addTearDown(cubit.close);
+  test('reloads server pagination after create, update and delete', () async {
+    final repository = _FakeCategoryRepository(count: 12);
+    final cubit = CategoriesCubit(repository);
+    addTearDown(cubit.close);
 
-      await cubit.load();
+    await cubit.load();
 
-      expect(cubit.state.items, hasLength(10));
-      expect(cubit.state.hasMore, isTrue);
-      expect(repository.requestedPages, [0]);
+    expect(cubit.state.items, hasLength(10));
+    expect(cubit.state.hasMore, isTrue);
+    expect(repository.requestedPages, [0]);
 
-      await cubit.loadMore();
+    await cubit.loadMore();
 
-      expect(cubit.state.items, hasLength(12));
-      expect(cubit.state.hasMore, isFalse);
-      expect(repository.requestedPages, [0, 1]);
+    expect(cubit.state.items, hasLength(12));
+    expect(cubit.state.hasMore, isFalse);
+    expect(repository.requestedPages, [0, 1]);
 
-      const draft = CategoryDraft(
-        code: 'NEW',
-        name: 'New category',
-        description: 'New description',
-      );
-      expect(await cubit.create(draft), isTrue);
-      expect(cubit.state.items.first.code, 'NEW');
+    const draft = CategoryDraft(
+      code: 'NEW',
+      name: 'New category',
+      description: 'New description',
+    );
+    expect(await cubit.create(draft), isTrue);
+    expect(cubit.state.items.first.code, 'NEW');
 
-      final original = cubit.state.items.last;
-      const update = CategoryDraft(
-        code: 'UPDATED',
-        name: 'Updated category',
-        description: 'Updated description',
-      );
-      expect(await cubit.update(original, update), isTrue);
-      expect(cubit.state.items.last.code, 'UPDATED');
+    final original = cubit.state.items.last;
+    const update = CategoryDraft(
+      code: 'UPDATED',
+      name: 'Updated category',
+      description: 'Updated description',
+    );
+    expect(await cubit.update(original, update), isTrue);
+    expect(cubit.state.items.last.code, 'UPDATED');
 
-      final created = cubit.state.items.first;
-      expect(await cubit.delete(created), isTrue);
-      expect(
-        cubit.state.items.any((category) => category.id == created.id),
-        isFalse,
-      );
-    },
-  );
+    final created = cubit.state.items.first;
+    expect(await cubit.delete(created), isTrue);
+    expect(
+      cubit.state.items.any((category) => category.id == created.id),
+      isFalse,
+    );
+  });
 }
 
 class _FakeCategoryRepository implements CategoryRepository {

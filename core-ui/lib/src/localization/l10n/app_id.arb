@@ -38,5 +38,6 @@
   "indonesian": "Indonesia",
   "pageNotFound": "Halaman tidak ditemukan",
   "routeNotFound": "Rute {routeName} tidak ditemukan.",
-  "@routeNotFound": {"placeholders": {"routeName": {"type": "String"}}}
+  "@routeNotFound": {"placeholders": {"routeName": {"type": "String"}}},
+  "loadMore": "Muat lebih banyak"
 }

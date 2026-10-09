@@ -1,9 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gasione/app/plugin_registry.dart';
 import 'package:gasione/app/widgets/app_settings_actions.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 import 'package:gasione_plugin_auth/gasione_plugin_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -22,92 +21,116 @@ class HomePage extends StatelessWidget {
         AuthUnauthenticated() => null,
       };
     });
+    final isLoggingOut = context.select<AuthCubit, bool>(
+      (cubit) => switch (cubit.state) {
+        AuthAuthenticated(:final isLoggingOut) => isLoggingOut,
+        AuthUnauthenticated() => false,
+      },
+    );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.home),
-        actions: [
-          const AppSettingsActions(),
-          IconButton(
-            onPressed: () {
-              unawaited(context.read<AuthCubit>().logout());
-            },
-            tooltip: localizations.signOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columnCount = switch (constraints.maxWidth) {
-                  < 600 => 3,
-                  < 900 => 4,
-                  _ => 6,
-                };
-
-                return CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.md,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (user != null) ...[
-                              AppText(
-                                localizations.helloUser(user.fullName),
-                                variant: AppTextVariant.headingSmall,
+    return ListenableBuilder(
+      listenable: pluginRegistry,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(localizations.home),
+            actions: [
+              const AppSettingsActions(),
+              IconButton(
+                onPressed: isLoggingOut
+                    ? null
+                    : () async {
+                        final result = await context.read<AuthCubit>().logout();
+                        if (!context.mounted) return;
+                        if (result case FailureResult(:final failure)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                failure.localizedMessage(localizations),
                               ),
-                              const SizedBox(height: AppSpacing.xs),
-                            ],
-                            AppText(
-                              localizations.mainMenuDescription,
-                              tone: AppTextTone.muted,
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.sm,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                      ),
-                      sliver: SliverGrid(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columnCount,
-                          mainAxisSpacing: AppSpacing.md,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisExtent: 120,
-                        ),
-                        delegate: SliverChildListDelegate.fixed([
-                          for (final menu in pluginRegistry.activeMenus)
-                            _MenuCard(
-                              icon: menu.icon,
-                              title: menu.titleBuilder(context),
-                              onTap: () => context.push(menu.route),
+                          );
+                        }
+                      },
+                tooltip: localizations.signOut,
+                icon: const Icon(Icons.logout),
+              ),
+            ],
+          ),
+          body: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columnCount = switch (constraints.maxWidth) {
+                      < 600 => 3,
+                      < 900 => 4,
+                      _ => 6,
+                    };
+
+                    return CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.md,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (user != null) ...[
+                                  AppText(
+                                    localizations.helloUser(user.fullName),
+                                    variant: AppTextVariant.headingSmall,
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                ],
+                                AppText(
+                                  localizations.mainMenuDescription,
+                                  tone: AppTextTone.muted,
+                                ),
+                              ],
                             ),
-                        ]),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.sm,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                          ),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columnCount,
+                                  mainAxisSpacing: AppSpacing.md,
+                                  crossAxisSpacing: AppSpacing.md,
+                                  mainAxisExtent: 120,
+                                ),
+                            delegate: SliverChildListDelegate.fixed([
+                              for (final menu in pluginRegistry.activeMenus)
+                                _MenuCard(
+                                  icon: menu.icon,
+                                  title: menu.titleBuilder(context),
+                                  onTap: () => context.push(menu.route),
+                                ),
+                            ]),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -127,4 +127,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String routeNotFound(String routeName) {
     return 'Route $routeName was not found.';
   }
+
+  @override
+  String get loadMore => 'Load more';
 }

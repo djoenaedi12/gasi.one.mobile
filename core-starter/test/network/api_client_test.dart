@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -177,6 +178,96 @@ void main() {
     expect(tokenStorage.accessToken, isNull);
     expect(tokenStorage.refreshToken, isNull);
   });
+  test('in-flight refresh cannot restore tokens after logout', () async {
+    final storage = MemoryTokenStorage()
+      ..accessToken = 'old'
+      ..refreshToken = 'old';
+    final started = Completer<void>();
+    final response = Completer<ResponseBody>();
+    var requests = 0;
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    dio.httpClientAdapter = _CallbackAdapter((_) async {
+      requests++;
+      return _jsonResponse({'message': 'expired'}, 401);
+    });
+    final refresh = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    refresh.httpClientAdapter = _CallbackAdapter((_) {
+      started.complete();
+      return response.future;
+    });
+    final client = ApiClient(
+      dio: dio,
+      refreshDio: refresh,
+      tokenStorage: storage,
+      enableRetry: false,
+      enableLogging: false,
+    );
+    addTearDown(client.close);
+    final pending = guardResult(() => client.getJson('/protected'));
+    await started.future;
+    await client.sessionStore.clearTokens();
+    response.complete(
+      _jsonResponse({'accessToken': 'new', 'refreshToken': 'new'}, 200),
+    );
+    expect(await pending, isA<FailureResult<Map<String, dynamic>>>());
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+    expect(requests, 1);
+  });
+
+  test('rejected old refresh cannot expire a newer login', () async {
+    final storage = MemoryTokenStorage()
+      ..accessToken = 'old'
+      ..refreshToken = 'old';
+    final started = Completer<void>();
+    final response = Completer<ResponseBody>();
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    dio.httpClientAdapter = _CallbackAdapter(
+      (_) async => _jsonResponse({'message': 'expired'}, 401),
+    );
+    final refresh = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    refresh.httpClientAdapter = _CallbackAdapter((_) {
+      started.complete();
+      return response.future;
+    });
+    final client = ApiClient(
+      dio: dio,
+      refreshDio: refresh,
+      tokenStorage: storage,
+      enableRetry: false,
+      enableLogging: false,
+    );
+    var expired = false;
+    client.setSessionExpiredHandler(() => expired = true);
+    addTearDown(client.close);
+    final pending = guardResult(() => client.getJson('/protected'));
+    await started.future;
+    final version = client.sessionStore.beginSession();
+    await client.sessionStore.saveTokens(
+      version: version,
+      accessToken: 'new-login',
+      refreshToken: 'new-login',
+    );
+    response.complete(_jsonResponse({'message': 'rejected'}, 401));
+    await pending;
+    expect(expired, isFalse);
+    expect(storage.accessToken, 'new-login');
+  });
+
+  test(
+    'storage read failure rejects the request instead of leaving it pending',
+    () async {
+      final client = ApiClient(
+        tokenStorage: _FailingStorage(),
+        enableRetry: false,
+        enableLogging: false,
+      );
+      addTearDown(client.close);
+      final result = await guardResult(() => client.getJson('/protected'))
+          .timeout(const Duration(seconds: 2));
+      expect(result, isA<FailureResult<Map<String, dynamic>>>());
+    },
+  );
 }
 
 typedef _RequestHandler = Future<ResponseBody> Function(RequestOptions options);
@@ -207,4 +298,10 @@ ResponseBody _jsonResponse(Map<String, Object?> data, int statusCode) {
       Headers.contentTypeHeader: [Headers.jsonContentType],
     },
   );
+}
+
+class _FailingStorage extends MemoryTokenStorage {
+  @override
+  Future<String?> readAccessToken() async =>
+      throw StateError('Storage unavailable');
 }

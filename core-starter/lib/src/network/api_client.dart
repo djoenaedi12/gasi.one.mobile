@@ -5,6 +5,7 @@ import 'package:gasione_core_starter/src/network/api_exception.dart';
 import 'package:gasione_core_starter/src/network/interceptors/auth_interceptor.dart';
 import 'package:gasione_core_starter/src/network/interceptors/retry_interceptor.dart';
 import 'package:gasione_core_starter/src/network/interceptors/safe_log_interceptor.dart';
+import 'package:gasione_core_starter/src/storage/session_store.dart';
 import 'package:gasione_core_starter/src/storage/token_storage.dart';
 
 class ApiClient {
@@ -15,13 +16,10 @@ class ApiClient {
     String baseUrl = '',
     bool enableRetry = true,
     bool enableLogging = kDebugMode,
-  }) : _dio = dio ?? Dio(_baseOptions(baseUrl)),
+  }) : sessionStore = SessionStore(tokenStorage ?? SecureTokenStorage()),
+       _dio = dio ?? Dio(_baseOptions(baseUrl)),
        _refreshDio = refreshDio ?? Dio(_baseOptions(baseUrl)) {
-    _authInterceptor = AuthInterceptor(
-      _dio,
-      _refreshDio,
-      tokenStorage ?? SecureTokenStorage(),
-    );
+    _authInterceptor = AuthInterceptor(_dio, _refreshDio, sessionStore);
 
     _dio.interceptors.add(_authInterceptor);
     if (enableRetry) {
@@ -33,6 +31,7 @@ class ApiClient {
   }
 
   final Dio _dio;
+  final SessionStore sessionStore;
   final Dio _refreshDio;
   late final AuthInterceptor _authInterceptor;
 

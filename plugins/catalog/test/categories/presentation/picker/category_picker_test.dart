@@ -91,8 +91,16 @@ class _CategoryRepository implements CategoryRepository {
   Future<Result<Category>> getById(String id) => throw UnimplementedError();
 
   @override
-  Future<Result<PageResult<Category>>> queryPage(QueryRequest query) =>
-      throw UnimplementedError();
+  Future<Result<PageResult<Category>>> queryPage(QueryRequest query) async =>
+      Success(
+        PageResult(
+          content: _categories,
+          page: 0,
+          size: 20,
+          totalElements: 2,
+          totalPages: 1,
+        ),
+      );
 
   @override
   Future<Result<Category?>> queryOne(QueryRequest query) =>

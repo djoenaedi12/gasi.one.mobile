@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gasione_core_starter/gasione_core_starter.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_plugin_auth/src/domain/repositories/auth_repository.dart';
 import 'package:gasione_plugin_auth/src/presentation/cubits/login_state.dart';
 
@@ -9,7 +9,7 @@ class LoginCubit extends Cubit<LoginState> {
   final AuthRepository _repository;
 
   void clearFailure() {
-    if (state is LoginFailure) {
+    if (!isClosed && state is LoginFailure) {
       emit(const LoginInitial());
     }
   }
@@ -18,7 +18,7 @@ class LoginCubit extends Cubit<LoginState> {
     required String username,
     required String password,
   }) async {
-    if (state is LoginLoading) {
+    if (isClosed || state is LoginLoading) {
       return;
     }
 
@@ -28,6 +28,7 @@ class LoginCubit extends Cubit<LoginState> {
       username: username.trim(),
       password: password,
     );
+    if (isClosed) return;
     switch (result) {
       case Success(:final data):
         emit(LoginSuccess(data));

@@ -173,9 +173,9 @@ void main() {
         ),
       );
 
-    final picker = tester.widget<InkWell>(find.byType(InkWell));
-    picker.onTap!();
-    await tester.pump();
+      final picker = tester.widget<InkWell>(find.byType(InkWell));
+      picker.onTap!();
+      await tester.pump();
 
       expect(selected?.id, 'office');
       expect(selected?.label, 'Office');

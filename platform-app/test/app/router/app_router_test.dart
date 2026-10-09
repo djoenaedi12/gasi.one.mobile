@@ -25,6 +25,7 @@ void main() {
         categoryRepository: _FakeCategoryRepository(),
       ),
     ]);
+    addTearDown(pluginRegistry.dispose);
     final router = AppRouter(
       authPlugin: authPlugin,
       pluginRegistry: pluginRegistry,
@@ -76,6 +77,13 @@ void main() {
 
     expect(find.byType(CategoryListPage), findsOneWidget);
 
+    pluginRegistry.activate(const []);
+    await tester.pumpAndSettle();
+    expect(find.byType(HomePage), findsOneWidget);
+    expect(find.byIcon(Icons.inventory_2_outlined), findsNothing);
+    pluginRegistry.activate(['catalog']);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
     pluginRegistry.activate(const []);
     router.router.go(CatalogRoutes.products);
     await tester.pumpAndSettle();

@@ -20,21 +20,25 @@ abstract final class CatalogRoutes {
 }
 
 final class CatalogPlugin implements AppPlugin, PickerContributor {
-  CatalogPlugin({required ApiClient apiClient})
-    : _productRepository = ProductRepositoryImpl(
-        ProductRemoteDataSource(apiClient),
-      ),
-      _categoryRepository = CategoryRepositoryImpl(
-        CategoryRemoteDataSource(apiClient),
-      );
+  CatalogPlugin({
+    required ApiClient apiClient,
+    this.reloadProductsAfterMutation = true,
+  }) : _productRepository = ProductRepositoryImpl(
+         ProductRemoteDataSource(apiClient),
+       ),
+       _categoryRepository = CategoryRepositoryImpl(
+         CategoryRemoteDataSource(apiClient),
+       );
 
   CatalogPlugin.fromRepositories({
     required this._productRepository,
     required this._categoryRepository,
+    this.reloadProductsAfterMutation = true,
   });
 
   final ProductRepository _productRepository;
   final CategoryRepository _categoryRepository;
+  final bool reloadProductsAfterMutation;
 
   @override
   String get code => 'catalog';
@@ -75,7 +79,10 @@ final class CatalogPlugin implements AppPlugin, PickerContributor {
     PluginRoute(
       path: CatalogRoutes.products,
       builder: (context, state) => BlocProvider(
-        create: (_) => ProductsCubit(_productRepository)..load(),
+        create: (_) => ProductsCubit(
+          _productRepository,
+          reloadAfterMutation: reloadProductsAfterMutation,
+        )..load(),
         child: const ProductListPage(),
       ),
     ),

@@ -14,6 +14,7 @@ class ThemeCubit extends Cubit<AppThemeSettings> {
 
   Future<void> load() async {
     final storedValue = await _preferences.readString(_preferenceKey);
+    if (isClosed) return;
     final themeMode = switch (storedValue) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
@@ -30,7 +31,7 @@ class ThemeCubit extends Cubit<AppThemeSettings> {
   }
 
   Future<void> setThemeMode(ThemeMode themeMode) async {
-    if (state.themeMode == themeMode) {
+    if (isClosed || state.themeMode == themeMode) {
       return;
     }
     emit(state.copyWith(themeMode: themeMode));
@@ -40,6 +41,7 @@ class ThemeCubit extends Cubit<AppThemeSettings> {
   /// Applies optional values loaded from an API/database over code defaults.
   /// Calling this with `null` restores all color tokens to code defaults.
   void applyThemeOverride(AppThemeConfigOverride? override) {
+    if (isClosed) return;
     final config =
         override?.resolve(AppThemeDefaults.config) ?? AppThemeDefaults.config;
     emit(state.copyWith(config: config));

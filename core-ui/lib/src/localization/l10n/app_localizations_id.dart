@@ -127,4 +127,7 @@ class AppLocalizationsId extends AppLocalizations {
   String routeNotFound(String routeName) {
     return 'Rute $routeName tidak ditemukan.';
   }
+
+  @override
+  String get loadMore => 'Muat lebih banyak';
 }

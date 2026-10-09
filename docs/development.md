@@ -5,7 +5,7 @@ repository root and app-specific commands from `platform-app`.
 
 ## Prerequisites
 
-- Flutter SDK with Dart `>=3.13.5 <4.0.0`
+- Flutter 3.47.6 (the version used by CI), with Dart `>=3.13.5 <4.0.0`
 - Android Studio or Android SDK and JDK 17 for Android builds
 - Xcode and CocoaPods for iOS builds
 
@@ -81,9 +81,12 @@ From the workspace root:
 
 ```bash
 dart format .
-flutter analyze
-flutter test
+bash tool/verify.sh
 ```
+
+`verify.sh` checks formatting, architecture boundaries, static analysis, and
+all six package test suites. A root `flutter test` does not replace those
+per-package suites. CI runs the same script on pushes and pull requests.
 
 Run an individual package suite when working locally in that package:
 

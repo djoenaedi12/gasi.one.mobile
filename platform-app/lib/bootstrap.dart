@@ -5,5 +5,5 @@ import 'package:gasione/app/app_dependencies.dart';
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   final dependencies = await AppDependencies.create();
-  runApp(MyApp(dependencies: dependencies));
+  runApp(GasiOneApp(dependencies: dependencies));
 }

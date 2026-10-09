@@ -12,13 +12,14 @@ class LocaleCubit extends Cubit<Locale?> {
 
   Future<void> load() async {
     final languageCode = await _preferences.readString(_preferenceKey);
+    if (isClosed) return;
     if (supportedLocales.any((locale) => locale.languageCode == languageCode)) {
       emit(Locale(languageCode!));
     }
   }
 
   Future<void> setLocale(Locale locale) async {
-    if (!supportedLocales.contains(locale) || state == locale) {
+    if (isClosed || !supportedLocales.contains(locale) || state == locale) {
       return;
     }
     emit(locale);

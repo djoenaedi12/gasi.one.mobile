@@ -50,6 +50,11 @@ The dependency rules are:
 - Domain code does not depend on widgets, Dio, JSON models, or storage implementations.
 - Presentation depends on domain contracts, not concrete repositories or data sources.
 
+These import/export boundaries are checked by `dart run tool/check_architecture.dart`
+and CI. Domain code imports `gasione_core_api` directly, rather than the
+infrastructure package's re-export. New plugins are discovered by the check
+through their package manifests.
+
 ## Feature data flow
 
 ```text
@@ -147,6 +152,12 @@ routes and menus do not need to be copied into the application shell.
 Authentication is a special bootstrap plugin: the app composes its login route
 before protected plugin routes because session redirect logic depends on it.
 
+Plugin codes, picker identifiers, and route patterns must be unique. Route
+parameters with different names still represent the same pattern. Plugin
+activation notifies the router and menu; disabling an open plugin redirects to
+home and closes its contributed pickers. Localization resources stay installed
+for registered plugins so outgoing pages can finish disposal safely.
+
 ### 6. Test
 
 Mirror `lib/src/features` beneath the plugin's `test` directory. At minimum,
@@ -168,3 +179,40 @@ flutter analyze
 - Routes and menus are contributed by the plugin.
 - Tests and generated files are current.
 - Formatting, analyzer, tests, and the mobile build pass.
+
+## Choosing CRUD orchestration
+
+Use `BaseCrudCubit<Entity, Id, CreateDraft, UpdateDraft>` for the standard GASI
+query/page contract. Use `PaginatedCrudCubit` only when adapting a different
+page contract; its type parameters represent the entity, identifier, read
+query, page query, page response, create draft, and update draft. A feature with
+specialized business rules or a read-only search picker should own a small
+dedicated Cubit instead of inheriting the entire CRUD interface.
+
+Persistent CRUD reloads the first page after a successful mutation. This keeps
+server sorting and pagination consistent when records move between pages.
+Mutation success remains success when that reload fails; the list shows a
+retryable error and discards its obsolete cursor. `reloadAfterMutation: false`
+is an explicit opt-out for simulated, nonpersistent APIs. The DummyJSON
+products example uses this option to retain its local mutation results.
+
+Async Cubits ignore responses after close. First-page reloads supersede older
+loads; new search terms invalidate pending picker results immediately and
+debounce server requests. Category lookup requests bounded pages with server
+filters rather than downloading the complete dataset.
+
+## Session lifecycle and diagnostics
+
+`ApiClient.sessionStore` is the shared credential lifecycle used by the auth
+repository and network interceptor. Login starts a new session generation;
+logout invalidates old operations before deleting credentials. Credential
+writes and deletion are serialized. Old login/refresh responses cannot write
+tokens or expire a newer session, and requests from an old session are rejected.
+Use the session store for credential changes rather than writing its underlying
+`TokenStorage` directly. A failed logout is reported to the caller and can be
+retried; it is not rendered as a successful logout.
+
+`guardResult` maps expected API errors to typed failures. Unexpected errors keep
+their original exception and stack trace in Dart diagnostics. An optional
+`reportError` callback lets a caller forward those diagnostics to its error
+reporting service without exposing them as UI messages.

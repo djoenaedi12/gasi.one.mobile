@@ -9,7 +9,8 @@ final class AuthUnauthenticated extends AuthState {
 }
 
 final class AuthAuthenticated extends AuthState {
-  const AuthAuthenticated(this.user);
+  const AuthAuthenticated(this.user, {this.isLoggingOut = false});
 
   final AuthUser user;
+  final bool isLoggingOut;
 }

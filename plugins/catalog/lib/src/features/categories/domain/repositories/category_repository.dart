@@ -1,4 +1,4 @@
-import 'package:gasione_core_starter/gasione_core_starter.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_plugin_catalog/src/features/categories/domain/entities/category.dart';
 
 abstract interface class CategoryRepository

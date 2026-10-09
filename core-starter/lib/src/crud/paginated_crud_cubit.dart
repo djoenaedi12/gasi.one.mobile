@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_starter/src/crud/paginated_crud_state.dart';
+import 'package:gasione_core_starter/src/errors/error_reporter.dart';
 
 typedef CrudPageMapper<Entity, PageQuery, Response> =
     CrudPageData<Entity, PageQuery> Function(Response result);
@@ -25,6 +26,7 @@ class PaginatedCrudCubit<
     required this.initialPageQuery,
     required this.idOf,
     required this.mapPage,
+    this.reloadAfterMutation = true,
   }) : super(PaginatedCrudState.initial());
 
   final BaseCrudRepository<
@@ -41,11 +43,16 @@ class PaginatedCrudCubit<
   final Id Function(Entity entity) idOf;
   final CrudPageMapper<Entity, PageQuery, PageResponse> mapPage;
 
+  /// Disable only for APIs that simulate mutations without persisting them.
+  final bool reloadAfterMutation;
+  int _generation = 0;
+
   Future<void> load() async {
-    if (state.isBusy) {
+    if (isClosed || state.isMutating) {
       return;
     }
 
+    final generation = ++_generation;
     final current = state;
     emit(
       PaginatedCrudState(
@@ -57,6 +64,7 @@ class PaginatedCrudCubit<
     );
 
     final result = await repository.queryPage(initialPageQuery);
+    if (isClosed || generation != _generation) return;
     switch (result) {
       case Success(:final data):
         _emitFirstPage(data, current);
@@ -79,7 +87,8 @@ class PaginatedCrudCubit<
 
   Future<void> _loadMore({bool retry = false}) async {
     final pageQuery = state.nextPageQuery;
-    if (state.isBusy ||
+    if (isClosed ||
+        state.isBusy ||
         pageQuery == null ||
         (state.loadMoreError != null && !retry)) {
       return;
@@ -95,7 +104,9 @@ class PaginatedCrudCubit<
       ),
     );
 
+    final generation = _generation;
     final result = await repository.queryPage(pageQuery);
+    if (isClosed || generation != _generation) return;
     switch (result) {
       case Success(:final data):
         _emitNextPage(data, current);
@@ -113,15 +124,20 @@ class PaginatedCrudCubit<
   }
 
   Future<bool> create(CreateDraft draft) async {
-    if (state.isBusy) {
+    if (isClosed || state.isBusy) {
       return false;
     }
 
     final current = state;
     _emitMutating(current);
     final result = await repository.create(draft);
+    if (isClosed) return result is Success;
     switch (result) {
       case Success(:final data):
+        if (reloadAfterMutation) {
+          await _reloadAfterMutation();
+          return true;
+        }
         emit(
           PaginatedCrudState(
             status: PaginatedCrudStatus.ready,
@@ -138,7 +154,7 @@ class PaginatedCrudCubit<
   }
 
   Future<bool> update(Entity entity, UpdateDraft draft) async {
-    if (state.isBusy) {
+    if (isClosed || state.isBusy) {
       return false;
     }
 
@@ -146,8 +162,13 @@ class PaginatedCrudCubit<
     final id = idOf(entity);
     _emitMutating(current);
     final result = await repository.update(id, draft);
+    if (isClosed) return result is Success;
     switch (result) {
       case Success(:final data):
+        if (reloadAfterMutation) {
+          await _reloadAfterMutation();
+          return true;
+        }
         emit(
           PaginatedCrudState(
             status: PaginatedCrudStatus.ready,
@@ -167,7 +188,7 @@ class PaginatedCrudCubit<
   }
 
   Future<bool> delete(Entity entity) async {
-    if (state.isBusy) {
+    if (isClosed || state.isBusy) {
       return false;
     }
 
@@ -175,8 +196,13 @@ class PaginatedCrudCubit<
     final id = idOf(entity);
     _emitMutating(current);
     final result = await repository.delete(id);
+    if (isClosed) return result is Success;
     switch (result) {
       case Success():
+        if (reloadAfterMutation) {
+          await _reloadAfterMutation();
+          return true;
+        }
         emit(
           PaginatedCrudState(
             status: PaginatedCrudStatus.ready,
@@ -196,6 +222,24 @@ class PaginatedCrudCubit<
     }
   }
 
+  /// Mutation success remains success even if refreshing the list fails.
+  /// In that case, discard the obsolete paging cursor and offer a fresh retry.
+  Future<void> _reloadAfterMutation() async {
+    final result = await repository.queryPage(initialPageQuery);
+    if (isClosed) return;
+    switch (result) {
+      case Success(:final data):
+        _emitFirstPage(data, PaginatedCrudState.initial());
+      case FailureResult(:final failure):
+        emit(
+          PaginatedCrudState(
+            status: PaginatedCrudStatus.failure,
+            error: failure,
+          ),
+        );
+    }
+  }
+
   void _emitFirstPage(
     PageResponse result,
     PaginatedCrudState<Entity, PageQuery> previous,
@@ -210,7 +254,8 @@ class PaginatedCrudCubit<
           total: page.total,
         ),
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      reportUnexpectedError(error, stackTrace);
       emit(
         PaginatedCrudState(
           status: PaginatedCrudStatus.failure,
@@ -242,7 +287,8 @@ class PaginatedCrudCubit<
           total: page.total ?? previous.total,
         ),
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      reportUnexpectedError(error, stackTrace);
       emit(
         PaginatedCrudState(
           status: PaginatedCrudStatus.ready,

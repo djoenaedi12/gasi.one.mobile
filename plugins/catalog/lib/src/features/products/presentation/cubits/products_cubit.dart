@@ -5,18 +5,22 @@ import 'package:gasione_plugin_catalog/src/features/products/domain/repositories
 import 'package:gasione_plugin_catalog/src/features/products/presentation/cubits/products_state.dart';
 
 class ProductsCubit extends Cubit<ProductsState> {
-  ProductsCubit(this._repository) : super(ProductsState.initial());
+  ProductsCubit(this._repository, {this.reloadAfterMutation = true})
+    : super(ProductsState.initial());
 
   static const pageSize = 10;
 
   final ProductRepository _repository;
+  final bool reloadAfterMutation;
+  int _generation = 0;
 
   /// Loads the first page. Also used by pull-to-refresh.
   Future<void> load() async {
-    if (_isBusy) {
+    if (isClosed || state.isMutating) {
       return;
     }
 
+    final generation = ++_generation;
     final current = state;
     emit(
       ProductsState(
@@ -29,6 +33,7 @@ class ProductsCubit extends Cubit<ProductsState> {
     );
 
     final result = await _repository.getProducts(limit: pageSize, skip: 0);
+    if (isClosed || generation != _generation) return;
     switch (result) {
       case Success(:final data):
         emit(
@@ -76,10 +81,12 @@ class ProductsCubit extends Cubit<ProductsState> {
       ),
     );
 
+    final generation = _generation;
     final result = await _repository.getProducts(
       limit: pageSize,
       skip: current.nextSkip,
     );
+    if (isClosed || generation != _generation) return;
     switch (result) {
       case Success(:final data):
         final existingIds = current.products.map((item) => item.id).toSet();
@@ -165,8 +172,13 @@ class ProductsCubit extends Cubit<ProductsState> {
     );
 
     final result = await operation();
+    if (isClosed) return result is Success;
     switch (result) {
       case Success(:final data):
+        if (reloadAfterMutation) {
+          await _reloadAfterMutation();
+          return true;
+        }
         emit(
           ProductsState(
             status: ProductsStatus.ready,
@@ -192,5 +204,24 @@ class ProductsCubit extends Cubit<ProductsState> {
     }
   }
 
-  bool get _isBusy => state.isBusy;
+  Future<void> _reloadAfterMutation() async {
+    final result = await _repository.getProducts(limit: pageSize, skip: 0);
+    if (isClosed) return;
+    switch (result) {
+      case Success(:final data):
+        emit(
+          ProductsState(
+            status: ProductsStatus.ready,
+            products: data.items,
+            total: data.total,
+            nextSkip: data.nextOffset,
+            hasMore: data.hasMore,
+          ),
+        );
+      case FailureResult(:final failure):
+        emit(ProductsState(status: ProductsStatus.failure, error: failure));
+    }
+  }
+
+  bool get _isBusy => isClosed || state.isBusy;
 }

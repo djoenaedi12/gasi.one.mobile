@@ -16,10 +16,15 @@ class AppRouter {
     required AuthPlugin authPlugin,
     required PluginRegistry pluginRegistry,
   }) : _authCubit = authPlugin.authCubit,
-       _pluginRegistry = pluginRegistry,
-       _refreshListenable = _RouterRefreshListenable(
-         authPlugin.authCubit.stream,
-       ) {
+       _pluginRegistry = pluginRegistry {
+    pluginRegistry.validateReservedPaths([
+      AppRoutes.home,
+      ...authPlugin.routes.map((route) => route.path),
+    ]);
+    _refreshListenable = _RouterRefreshListenable(
+      authPlugin.authCubit.stream,
+      pluginRegistry,
+    );
     router = GoRouter(
       initialLocation: _authCubit.state is AuthAuthenticated
           ? AppRoutes.home
@@ -41,7 +46,7 @@ class AppRouter {
 
   final AuthCubit _authCubit;
   final PluginRegistry _pluginRegistry;
-  final _RouterRefreshListenable _refreshListenable;
+  late final _RouterRefreshListenable _refreshListenable;
   late final GoRouter router;
 
   String? _redirect(BuildContext context, GoRouterState state) {
@@ -67,14 +72,19 @@ class AppRouter {
 }
 
 class _RouterRefreshListenable extends ChangeNotifier {
-  _RouterRefreshListenable(Stream<Object?> stream) {
+  _RouterRefreshListenable(Stream<Object?> stream, this._plugins) {
     _subscription = stream.listen((_) => notifyListeners());
+    _plugins.addListener(_onPluginsChanged);
   }
 
   late final StreamSubscription<Object?> _subscription;
+  final PluginRegistry _plugins;
+
+  void _onPluginsChanged() => notifyListeners();
 
   @override
   void dispose() {
+    _plugins.removeListener(_onPluginsChanged);
     unawaited(_subscription.cancel());
     super.dispose();
   }

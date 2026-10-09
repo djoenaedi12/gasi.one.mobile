@@ -41,14 +41,13 @@ final class AuthPlugin implements AppPlugin {
 
   static Future<AuthPlugin> create({
     required ApiClient apiClient,
-    required TokenStorage tokenStorage,
     WidgetBuilder? loginActionsBuilder,
     String initialUsername = '',
     String initialPassword = '',
   }) async {
     final repository = AuthRepositoryImpl(
       AuthRemoteDataSource(apiClient),
-      tokenStorage,
+      apiClient.sessionStore,
     );
     final sessionResult = await repository.restoreSession();
     final initialUser = switch (sessionResult) {
