@@ -74,3 +74,5 @@ secure session storage, retries, and token refresh.
 
 - [Development guide](docs/development.md)
 - [Plugin development guide](docs/feature-development.md)
+- [Legacy EPC integration runbook](docs/legacy-integration.md)
+- [Legacy EPC incremental migration roadmap](docs/legacy-migration-roadmap.md)
