@@ -1,8 +1,0 @@
-{
-  "@@locale": "en",
-  "dummyJsonStore": "DummyJSON Store",
-  "demoLoginDescription": "Sign in with the pre-filled demo account.",
-  "username": "Username",
-  "password": "Password",
-  "signIn": "Sign in"
-}

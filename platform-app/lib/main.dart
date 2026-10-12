@@ -1,3 +1,3 @@
-import 'package:gasione/bootstrap.dart';
+import 'package:epeoplecare/main.dart' as legacy;
 
-Future<void> main() => bootstrap();
+void main() => legacy.main();

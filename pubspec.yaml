@@ -11,8 +11,7 @@ workspace:
   - core-starter
   - core-ui
   - platform-app
-  - plugins/auth
-  - plugins/catalog
+  - plugins/legacy_epc
 
 dev_dependencies:
   flutter_lints: ^6.0.0

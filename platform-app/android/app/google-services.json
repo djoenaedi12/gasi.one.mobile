@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "513823005272",
+    "project_id": "e-peoplecare",
+    "storage_bucket": "e-peoplecare.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:513823005272:android:ff6832d1774d9b441dc82d",
+        "android_client_info": {
+          "package_name": "com.gasi.ewf"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "513823005272-i8v507cfe4o8311ir7mb1nehfosngkk9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXEQYLXtcISTDnJ4fzTwWrp6jea7ErPY0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "513823005272-i8v507cfe4o8311ir7mb1nehfosngkk9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "513823005272-e34msfleoful1o2np6dt1uo3jq3ptqe7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gasi.ewf.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
