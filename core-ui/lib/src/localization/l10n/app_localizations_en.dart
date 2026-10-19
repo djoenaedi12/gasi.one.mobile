@@ -19,6 +19,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requiredField => 'This field is required.';
 
   @override
+  String createResource(String resource) {
+    return 'Create $resource';
+  }
+
+  @override
+  String editResource(String resource) {
+    return 'Edit $resource';
+  }
+
+  @override
+  String selectResource(String resource) {
+    return 'Select $resource';
+  }
+
+  @override
+  String noResources(String resource) {
+    return 'No $resource';
+  }
+
+  @override
+  String get noDataAvailable => 'No data is available yet.';
+
+  @override
+  String get noOptionsAvailable => 'No options are available.';
+
+  @override
+  String deleteResourceQuestion(String resource) {
+    return 'Delete $resource?';
+  }
+
+  @override
+  String deleteRecordQuestion(String label) {
+    return 'Delete $label?';
+  }
+
+  @override
+  String validationRequired(String field) {
+    return '$field is required.';
+  }
+
+  @override
+  String validationMaxLength(String field, int maxLength) {
+    return '$field must be at most $maxLength characters.';
+  }
+
+  @override
+  String validationWholeNumber(String field) {
+    return '$field must be a valid whole number.';
+  }
+
+  @override
+  String validationNumber(String field) {
+    return '$field must be a valid number.';
+  }
+
+  @override
+  String validationIsoDate(String field) {
+    return '$field must be a valid ISO date.';
+  }
+
+  @override
   String get home => 'Home';
 
   @override

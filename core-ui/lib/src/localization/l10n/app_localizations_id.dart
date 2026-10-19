@@ -19,6 +19,67 @@ class AppLocalizationsId extends AppLocalizations {
   String get requiredField => 'Kolom ini wajib diisi.';
 
   @override
+  String createResource(String resource) {
+    return 'Tambah $resource';
+  }
+
+  @override
+  String editResource(String resource) {
+    return 'Ubah $resource';
+  }
+
+  @override
+  String selectResource(String resource) {
+    return 'Pilih $resource';
+  }
+
+  @override
+  String noResources(String resource) {
+    return '$resource belum tersedia';
+  }
+
+  @override
+  String get noDataAvailable => 'Belum ada data tersedia.';
+
+  @override
+  String get noOptionsAvailable => 'Belum ada pilihan tersedia.';
+
+  @override
+  String deleteResourceQuestion(String resource) {
+    return 'Hapus $resource?';
+  }
+
+  @override
+  String deleteRecordQuestion(String label) {
+    return 'Hapus $label?';
+  }
+
+  @override
+  String validationRequired(String field) {
+    return '$field wajib diisi.';
+  }
+
+  @override
+  String validationMaxLength(String field, int maxLength) {
+    return '$field maksimal $maxLength karakter.';
+  }
+
+  @override
+  String validationWholeNumber(String field) {
+    return '$field harus berupa bilangan bulat yang valid.';
+  }
+
+  @override
+  String validationNumber(String field) {
+    return '$field harus berupa angka yang valid.';
+  }
+
+  @override
+  String validationIsoDate(String field) {
+    return '$field harus berupa tanggal ISO yang valid.';
+  }
+
+  @override
   String get home => 'Beranda';
 
   @override

@@ -116,6 +116,84 @@ abstract class AppLocalizations {
   /// **'This field is required.'**
   String get requiredField;
 
+  /// No description provided for @createResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Create {resource}'**
+  String createResource(String resource);
+
+  /// No description provided for @editResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {resource}'**
+  String editResource(String resource);
+
+  /// No description provided for @selectResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {resource}'**
+  String selectResource(String resource);
+
+  /// No description provided for @noResources.
+  ///
+  /// In en, this message translates to:
+  /// **'No {resource}'**
+  String noResources(String resource);
+
+  /// No description provided for @noDataAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No data is available yet.'**
+  String get noDataAvailable;
+
+  /// No description provided for @noOptionsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No options are available.'**
+  String get noOptionsAvailable;
+
+  /// No description provided for @deleteResourceQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {resource}?'**
+  String deleteResourceQuestion(String resource);
+
+  /// No description provided for @deleteRecordQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {label}?'**
+  String deleteRecordQuestion(String label);
+
+  /// No description provided for @validationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} is required.'**
+  String validationRequired(String field);
+
+  /// No description provided for @validationMaxLength.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be at most {maxLength} characters.'**
+  String validationMaxLength(String field, int maxLength);
+
+  /// No description provided for @validationWholeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be a valid whole number.'**
+  String validationWholeNumber(String field);
+
+  /// No description provided for @validationNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be a valid number.'**
+  String validationNumber(String field);
+
+  /// No description provided for @validationIsoDate.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be a valid ISO date.'**
+  String validationIsoDate(String field);
+
   /// No description provided for @home.
   ///
   /// In en, this message translates to:
