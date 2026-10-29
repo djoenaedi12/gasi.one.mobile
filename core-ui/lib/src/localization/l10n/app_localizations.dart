@@ -104,6 +104,30 @@ abstract class AppLocalizations {
   /// **'GASI:One'**
   String get appName;
 
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get loading;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String appVersion(String version);
+
+  /// No description provided for @preparingApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the application…'**
+  String get preparingApp;
+
+  /// No description provided for @appPreparationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to prepare the application. Please try again.'**
+  String get appPreparationFailed;
+
   /// No description provided for @signOut.
   ///
   /// In en, this message translates to:

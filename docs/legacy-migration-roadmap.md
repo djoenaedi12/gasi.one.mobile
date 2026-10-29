@@ -1,5 +1,11 @@
 # Legacy EPC Incremental Migration Roadmap
 
+> Foundation update (29 October 2026): startup and the application shell now
+> belong to `platform-app`. Auth/attendance UI cutover remains in the CR branch.
+> [Current ownership and prerequisite coverage](mobile-cr-foundation.md) supersedes
+> historical runtime/status descriptions below. Native release checks remain applicable.
+
+
 This document defines how the EPC application will move from
 `plugins/legacy_epc` into the new GASI One architecture without a big-bang
 rewrite. It starts after the legacy code has been integrated into

@@ -13,6 +13,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'GASI:One';
 
   @override
+  String get loading => 'Loading';
+
+  @override
+  String appVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get preparingApp => 'Preparing the application…';
+
+  @override
+  String get appPreparationFailed =>
+      'Unable to prepare the application. Please try again.';
+
+  @override
   String get signOut => 'Sign out';
 
   @override

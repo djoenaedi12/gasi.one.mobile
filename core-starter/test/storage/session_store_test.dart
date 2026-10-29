@@ -44,6 +44,19 @@ void main() {
     await sessions.clearTokens();
     expect(storage.accessToken, isNull);
   });
+  test('invalidation blocks reads without deleting installed tokens', () async {
+    final storage = MemoryTokenStorage()
+      ..accessToken = 'installed-access'
+      ..refreshToken = 'installed-refresh';
+    final sessions = SessionStore(storage);
+
+    sessions.invalidate();
+
+    expect(await sessions.readAccessToken(), isNull);
+    expect(await sessions.readRefreshToken(), isNull);
+    expect(storage.accessToken, 'installed-access');
+    expect(storage.refreshToken, 'installed-refresh');
+  });
   test('stale login cannot save tokens or expire a newer session', () async {
     final sessions = SessionStore(MemoryTokenStorage());
     final old = sessions.beginSession();

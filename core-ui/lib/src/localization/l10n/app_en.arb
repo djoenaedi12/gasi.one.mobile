@@ -1,6 +1,11 @@
 {
   "@@locale": "en",
   "appName": "GASI:One",
+  "loading": "Loading",
+  "appVersion": "Version {version}",
+  "@appVersion": {"placeholders": {"version": {"type": "String"}}},
+  "preparingApp": "Preparing the application…",
+  "appPreparationFailed": "Unable to prepare the application. Please try again.",
   "signOut": "Sign out",
   "requiredField": "This field is required.",
   "createResource": "Create {resource}",

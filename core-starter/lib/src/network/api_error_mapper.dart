@@ -53,7 +53,13 @@ abstract final class ApiErrorMapper {
       return null;
     }
 
-    for (final key in ['message', 'error', 'detail', 'title']) {
+    for (final key in [
+      'message',
+      'error_description',
+      'error',
+      'detail',
+      'title',
+    ]) {
       final value = data[key];
       if (value is String) {
         final message = _safeText(value);

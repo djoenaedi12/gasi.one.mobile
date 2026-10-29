@@ -13,6 +13,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get appName => 'GASI:One';
 
   @override
+  String get loading => 'Memuat';
+
+  @override
+  String appVersion(String version) {
+    return 'Versi $version';
+  }
+
+  @override
+  String get preparingApp => 'Menyiapkan aplikasi…';
+
+  @override
+  String get appPreparationFailed =>
+      'Aplikasi belum dapat disiapkan. Silakan coba lagi.';
+
+  @override
   String get signOut => 'Keluar';
 
   @override

@@ -11,7 +11,7 @@ import 'package:epeoplecare/model/user.dart';
 import 'package:epeoplecare/model/verification_type.dart';
 import 'package:epeoplecare/model/license.dart';
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class Config {
@@ -31,28 +31,24 @@ class Config {
   static String serverTimezone = "+07:00";
   static bool updateAvailable = false;
   static String version = "";
-  static String deviceId = "";
+  static late AppRuntime runtime;
+  static late PushTokenProvider notifications;
+  static String get deviceId => runtime.deviceId;
   static bool showDisabledMenu = true;
   static String language = "en";
   static String fcmToken = "";
-  static PackageInfo packageInfo = PackageInfo(
-    appName: 'Unknown',
-    packageName: 'Unknown',
-    version: 'Unknown',
-    buildNumber: 'Unknown',
-    buildSignature: 'Unknown',
-  );
+  static AppInfo get packageInfo => runtime.info;
   static bool switchAccount = false;
   static bool showRateLimitPopup = false;
 
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static late GlobalKey<NavigatorState> navigatorKey;
   static Color DEFAULT_COLOR = const Color(0xFF1E88E5);
   static Color DEFAULT_ACCENT_COLOR = Colors.white;
   static Color SEMANTIC_COLOR_SUCCESS = const Color(0xFF2FD071);
   static Color SEMANTIC_COLOR_DANGER = const Color(0xFFF1460D);
   static bool isManager = false;
-  static bool unsafeDevice = false;
-  static bool isSignatureValid = true;
+  static bool get unsafeDevice => runtime.security.unsafeDevice;
+  static bool get isSignatureValid => runtime.security.signatureValid;
   // Konfigurasi untuk menyimpan informasi kamera yang digunakan
   // By default system / kamera bawaan
   static String cameraPreference = "system";
@@ -94,7 +90,7 @@ class Config {
 
     return menuModules;
   }
-  
+
   static bool hasMenuAccess(int? menuId) {
     for (var role in Config.user!.roles) {
       for (var menu in role.menus) {

@@ -14,6 +14,7 @@ class AppTextFormField extends StatelessWidget {
     this.enabled = true,
     this.readOnly = false,
     this.autofocus = false,
+    this.autofillHints,
     this.obscureText = false,
     this.keyboardType,
     this.textInputAction,
@@ -41,6 +42,7 @@ class AppTextFormField extends StatelessWidget {
   final bool enabled;
   final bool readOnly;
   final bool autofocus;
+  final Iterable<String>? autofillHints;
   final bool obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -65,6 +67,7 @@ class AppTextFormField extends StatelessWidget {
       enabled: enabled,
       readOnly: readOnly,
       autofocus: autofocus,
+      autofillHints: autofillHints,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,

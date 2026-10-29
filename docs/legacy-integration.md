@@ -1,5 +1,11 @@
 # Legacy EPC Integration Runbook
 
+> Foundation update (29 October 2026): startup and the application shell now
+> belong to `platform-app`. Auth/attendance UI cutover remains in the CR branch.
+> [Current ownership and prerequisite coverage](mobile-cr-foundation.md) supersedes
+> historical runtime/status descriptions below. Native release checks remain applicable.
+
+
 This document describes how the former EPC mobile application is integrated
 into the `gasi.one.mobile` workspace with the smallest practical behavior
 change. It also records the current repository state, the compatibility work

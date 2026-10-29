@@ -1,6 +1,10 @@
 {
   "@@locale": "id",
   "appName": "GASI:One",
+  "loading": "Memuat",
+  "appVersion": "Versi {version}",
+  "preparingApp": "Menyiapkan aplikasi…",
+  "appPreparationFailed": "Aplikasi belum dapat disiapkan. Silakan coba lagi.",
   "signOut": "Keluar",
   "requiredField": "Kolom ini wajib diisi.",
   "createResource": "Tambah {resource}",

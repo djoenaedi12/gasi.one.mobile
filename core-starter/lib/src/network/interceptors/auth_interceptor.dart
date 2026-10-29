@@ -5,9 +5,20 @@ import 'package:gasione_core_starter/src/errors/error_reporter.dart';
 import 'package:gasione_core_starter/src/storage/session_store.dart';
 
 typedef SessionExpiredCallback = FutureOr<void> Function();
+typedef TokenRefresher =
+    Future<({String accessToken, String refreshToken})> Function(
+      String refreshToken,
+    );
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._dio, this._refreshDio, this._sessions);
+  AuthInterceptor(
+    this._dio,
+    this._refreshDio,
+    this._sessions, {
+    this.refreshTokens,
+  });
+
+  final TokenRefresher? refreshTokens;
 
   static const skipAuthKey = 'skipAuth';
   static const _authRetriedKey = 'authRetried';
@@ -127,6 +138,20 @@ class AuthInterceptor extends Interceptor {
         return null;
       }
 
+      final refresher = refreshTokens;
+      if (refresher != null) {
+        final tokens = await refresher(refreshToken);
+        if (tokens.accessToken.isEmpty || tokens.refreshToken.isEmpty) {
+          await _expireSession(version);
+          return null;
+        }
+        final saved = await _sessions.saveTokens(
+          version: version,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        );
+        return saved ? tokens.accessToken : null;
+      }
       final response = await _refreshDio.post<Map<String, dynamic>>(
         '/auth/refresh',
         data: {'refreshToken': refreshToken, 'expiresInMins': 30},

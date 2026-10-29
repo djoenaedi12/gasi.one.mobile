@@ -8,6 +8,16 @@ String? dependencyViolation({
   final isCore = sourcePackage.startsWith('gasione_core_');
   final isPlugin = sourcePackage.startsWith('gasione_plugin_');
   final targetIsPlugin = targetPackage.startsWith('gasione_plugin_');
+  // TRANSITION[LEGACY-EPC]: these two guards retire with the epeoplecare package;
+  // general core/plugin boundary rules below remain permanent.
+  if ((isCore || isPlugin) && targetPackage == 'epeoplecare') {
+    return 'Core and new plugins cannot depend on legacy implementations.';
+  }
+  if (sourcePackage == 'gasione' &&
+      targetPackage == 'epeoplecare' &&
+      targetPath != 'lib/legacy_epc.dart') {
+    return 'The host must use the legacy public integration surface.';
+  }
   if (isCore && (targetIsPlugin || targetPackage == 'gasione')) {
     return 'Core packages cannot depend on business plugins or the app.';
   }

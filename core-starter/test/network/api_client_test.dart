@@ -9,6 +9,37 @@ import 'package:gasione_core_starter/gasione_core_starter.dart';
 import '../helpers/memory_token_storage.dart';
 
 void main() {
+  test(
+    'PUT forwards query parameters, metadata headers, and bearer token',
+    () async {
+      final tokens = MemoryTokenStorage()..accessToken = 'active-access';
+      late RequestOptions observed;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      dio.httpClientAdapter = _CallbackAdapter((options) async {
+        observed = options;
+        return _jsonResponse({'success': true}, 200);
+      });
+      final client = ApiClient(
+        dio: dio,
+        tokenStorage: tokens,
+        enableRetry: false,
+        enableLogging: false,
+      );
+      addTearDown(client.close);
+
+      await client.putJson(
+        '/api/v1/user/set-device-id',
+        queryParameters: {'deviceId': 'device-1'},
+        headers: {'Device': 'android/test', 'Accept-Language': 'id'},
+      );
+
+      expect(observed.queryParameters, {'deviceId': 'device-1'});
+      expect(observed.headers['Device'], 'android/test');
+      expect(observed.headers['Accept-Language'], 'id');
+      expect(observed.headers['Authorization'], 'Bearer active-access');
+    },
+  );
+
   test('refreshes once and replays concurrent unauthorized requests', () async {
     final tokenStorage = MemoryTokenStorage()
       ..accessToken = 'expired-access'
@@ -57,6 +88,44 @@ void main() {
     expect(refreshCalls, 1);
     expect(tokenStorage.accessToken, 'fresh-access');
     expect(tokenStorage.refreshToken, 'fresh-refresh');
+  });
+
+  test('uses injected tenant refresh transport and ignores completion after logout', () async {
+    final tokens = MemoryTokenStorage()
+      ..accessToken = 'expired'
+      ..refreshToken = 'installed-refresh';
+    final dio = Dio(BaseOptions(baseUrl: 'https://tenant.test'));
+    dio.httpClientAdapter = _CallbackAdapter(
+      (options) async => _jsonResponse({'message': 'expired'}, 401),
+    );
+    final refresh = Completer<({String accessToken, String refreshToken})>();
+    final started = Completer<void>();
+    var calls = 0;
+    final client = ApiClient(
+      dio: dio,
+      tokenStorage: tokens,
+      enableRetry: false,
+      enableLogging: false,
+      refreshTokens: (token) {
+        expect(token, 'installed-refresh');
+        calls++;
+        started.complete();
+        return refresh.future;
+      },
+    );
+    addTearDown(client.close);
+    final pending = client.getJson('/api/v1/protected');
+    final assertion = expectLater(pending, throwsA(isA<ApiException>()));
+    await started.future;
+    await client.sessionStore.clearTokens();
+    refresh.complete((
+      accessToken: 'late-access',
+      refreshToken: 'late-refresh',
+    ));
+    await assertion;
+    expect(calls, 1);
+    expect(tokens.accessToken, isNull);
+    expect(tokens.refreshToken, isNull);
   });
 
   test('converts a backend validation response into a typed failure', () async {

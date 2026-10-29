@@ -11,6 +11,10 @@ workspace:
   - core-starter
   - core-ui
   - platform-app
+  - plugins/attendance
+  - plugins/auth
+  - plugins/business_context
+  # TRANSITION[LEGACY-EPC]: remove with the package after all consumers migrate.
   - plugins/legacy_epc
 
 dev_dependencies:

@@ -1,3 +1,3 @@
-import 'package:epeoplecare/main.dart' as legacy;
+import 'bootstrap.dart';
 
-void main() => legacy.main();
+void main() => bootstrap();

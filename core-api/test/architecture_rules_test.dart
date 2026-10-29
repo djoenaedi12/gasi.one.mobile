@@ -103,4 +103,29 @@ void main() {
       isNull,
     );
   });
+  // TRANSITION[LEGACY-EPC]: retire these EPC-specific assertions with the package;
+  // keep all general core/plugin dependency tests above.
+  test('legacy implementation stays behind its public integration surface', () {
+    expect(
+      check('gasione_core_starter', 'epeoplecare', layer: 'services'),
+      isNotNull,
+    );
+    expect(
+      check('gasione_plugin_auth', 'epeoplecare', layer: 'data'),
+      isNotNull,
+    );
+    expect(
+      check('gasione', 'epeoplecare', path: 'lib/config.dart', layer: 'app'),
+      isNotNull,
+    );
+    expect(
+      check(
+        'gasione',
+        'epeoplecare',
+        path: 'lib/legacy_epc.dart',
+        layer: 'app',
+      ),
+      isNull,
+    );
+  });
 }

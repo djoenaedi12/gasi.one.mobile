@@ -11,9 +11,34 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+
+  # FOUNDATION: shared contracts, runtime, and UI remain after EPC migration.
+  gasione_core_api: ^0.1.0
+  gasione_core_starter: ^0.1.0
+  gasione_core_ui: ^0.1.0
+  gasione_plugin_attendance: ^0.1.0
+  gasione_plugin_auth: ^0.1.0
+  gasione_plugin_business_context: ^0.1.0
+  firebase_core: ^4.15.0
+  flutter_local_notifications: ^22.3.1
+  shared_preferences: ^2.5.5
+
+  # TRANSITION[LEGACY-EPC]: remove after the last EPC page/route/startup caller.
+  # Removal conditions and related code: docs/migration-cleanup.md.
   epeoplecare: ^4.15.0
 
+  # TRANSITION[LEGACY-UI]: preserve APIs used by legacy pages. Remove/replace
+  # each package only after its host AND feature callers have been migrated.
+  # If adopted by new features, explicitly reclassify it as FOUNDATION.
+  adaptive_theme: 3.7.0
+  easy_localization: ^3.0.2
+  flutter_easyloading: ^3.0.5
+  flutter_phoenix: ^1.1.1
+
 dev_dependencies:
+  # TRANSITION[LEGACY-EPC]: mock HTTP calls in the legacy lifecycle fixture.
+  # Keep http if other platform tests/features adopt it after this fixture moves.
+  http: ^1.3.0
   flutter_test:
     sdk: flutter
 
@@ -25,7 +50,11 @@ flutter:
   uses-material-design: true
 
   assets:
+    # TRANSITION[LEGACY-ASSETS]: mixed legacy images and shared brand assets.
+    # Audit individual files; do not delete the entire image directory blindly.
     - assets/img/
+    # TRANSITION[LEGACY-UI]: remove after legacy .tr() and host loader migrate.
     - assets/i18n/en.json
     - assets/i18n/id.json
+    # COMPAT[ANDROID-CA]: network trust support, independent of EPC retirement.
     - assets/ca/

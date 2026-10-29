@@ -1,0 +1,22 @@
+name: gasione_plugin_business_context
+description: Company-scoped business context bootstrap for GASI One.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  gasione_core_api: ^0.1.0
+  gasione_core_starter: ^0.1.0
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  dio: ^5.11.1

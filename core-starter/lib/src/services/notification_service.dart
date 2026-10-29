@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_starter/src/utils/notification_utils.dart';
 
 enum AppNotificationPermissionStatus {
@@ -38,7 +39,7 @@ final class NotificationInteraction {
   final Map<String, Object?> data;
 }
 
-abstract interface class NotificationService {
+abstract interface class NotificationService implements PushTokenProvider {
   bool get isLocalInitialized;
 
   bool get isPushInitialized;
@@ -47,6 +48,7 @@ abstract interface class NotificationService {
 
   Stream<NotificationInteraction> get interactions;
 
+  @override
   Stream<String> get tokenRefreshes;
 
   Future<void> initializeLocal();
@@ -57,6 +59,7 @@ abstract interface class NotificationService {
 
   Future<AppNotificationPermissionStatus> requestPermission();
 
+  @override
   Future<String?> getToken();
 
   Future<void> deleteToken();
@@ -88,8 +91,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 final class FirebaseNotificationService implements NotificationService {
   FirebaseNotificationService({
     FlutterLocalNotificationsPlugin? localNotifications,
+    AndroidNotificationChannel? androidChannel,
   }) : _localNotifications =
-           localNotifications ?? FlutterLocalNotificationsPlugin();
+           localNotifications ?? FlutterLocalNotificationsPlugin(),
+       _androidChannel = androidChannel ?? _channel;
 
   static const _channelId = 'general_notifications';
   static const _channelName = 'General notifications';
@@ -102,6 +107,7 @@ final class FirebaseNotificationService implements NotificationService {
   );
 
   final FlutterLocalNotificationsPlugin _localNotifications;
+  final AndroidNotificationChannel _androidChannel;
   final StreamController<AppNotification> _foregroundMessages =
       StreamController.broadcast();
   final StreamController<NotificationInteraction> _interactions =
@@ -161,7 +167,7 @@ final class FirebaseNotificationService implements NotificationService {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >()
-        ?.createNotificationChannel(_channel);
+        ?.createNotificationChannel(_androidChannel);
 
     final launchDetails = await _localNotifications
         .getNotificationAppLaunchDetails();
@@ -187,6 +193,7 @@ final class FirebaseNotificationService implements NotificationService {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     final messaging = FirebaseMessaging.instance;
     _messaging = messaging;
+    await messaging.setAutoInitEnabled(true);
 
     await messaging.setForegroundNotificationPresentationOptions(
       alert: false,
@@ -306,12 +313,12 @@ final class FirebaseNotificationService implements NotificationService {
       id: notification.id,
       title: notification.title,
       body: notification.body,
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.high,
+          _androidChannel.id,
+          _androidChannel.name,
+          channelDescription: _androidChannel.description,
+          importance: _androidChannel.importance,
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),

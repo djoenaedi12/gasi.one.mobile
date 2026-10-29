@@ -16,10 +16,16 @@ class ApiClient {
     String baseUrl = '',
     bool enableRetry = true,
     bool enableLogging = kDebugMode,
+    TokenRefresher? refreshTokens,
   }) : sessionStore = SessionStore(tokenStorage ?? SecureTokenStorage()),
        _dio = dio ?? Dio(_baseOptions(baseUrl)),
        _refreshDio = refreshDio ?? Dio(_baseOptions(baseUrl)) {
-    _authInterceptor = AuthInterceptor(_dio, _refreshDio, sessionStore);
+    _authInterceptor = AuthInterceptor(
+      _dio,
+      _refreshDio,
+      sessionStore,
+      refreshTokens: refreshTokens,
+    );
 
     _dio.interceptors.add(_authInterceptor);
     if (enableRetry) {
@@ -53,6 +59,7 @@ class ApiClient {
   Future<Map<String, dynamic>> getJson(
     String path, {
     Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
     CancelToken? cancelToken,
     bool authenticated = true,
   }) {
@@ -61,7 +68,7 @@ class ApiClient {
         path,
         queryParameters: queryParameters,
         cancelToken: cancelToken,
-        options: _options(authenticated),
+        options: _options(authenticated, headers: headers),
       ),
     );
   }
@@ -69,6 +76,7 @@ class ApiClient {
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, Object?>? data,
+    Map<String, Object?>? headers,
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
     bool authenticated = true,
@@ -79,14 +87,59 @@ class ApiClient {
         data: data,
         cancelToken: cancelToken,
         onSendProgress: onSendProgress,
-        options: _options(authenticated),
+        options: _options(authenticated, headers: headers),
       ),
     );
   }
 
+  /// OAuth and other form endpoints can return JSON without a CRUD envelope.
+  Future<Map<String, dynamic>> postForm(
+    String path, {
+    required Map<String, Object?> data,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+    bool authenticated = true,
+    Set<int> acceptedStatusCodes = const {},
+  }) => _jsonRequest(
+    () => _dio.post<dynamic>(
+      path,
+      data: data,
+      cancelToken: cancelToken,
+      options: _options(
+        authenticated,
+        headers: headers,
+        contentType: Headers.formUrlEncodedContentType,
+        acceptedStatusCodes: acceptedStatusCodes,
+      ),
+    ),
+  );
+
+  Future<Uint8List> getBytes(
+    String path, {
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+    bool authenticated = true,
+  }) => _guard(() async {
+    final response = await _dio.get<List<int>>(
+      path,
+      queryParameters: queryParameters,
+      cancelToken: cancelToken,
+      options: _options(authenticated, headers: headers)
+        ..responseType = ResponseType.bytes,
+    );
+    final bytes = response.data;
+    if (bytes == null || bytes.isEmpty) {
+      throw const ApiException(ApiExceptionType.invalidResponse);
+    }
+    return Uint8List.fromList(bytes);
+  });
+
   Future<Map<String, dynamic>> putJson(
     String path, {
     Map<String, Object?>? data,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
     bool authenticated = true,
@@ -95,9 +148,10 @@ class ApiClient {
       () => _dio.put<dynamic>(
         path,
         data: data,
+        queryParameters: queryParameters,
         cancelToken: cancelToken,
         onSendProgress: onSendProgress,
-        options: _options(authenticated),
+        options: _options(authenticated, headers: headers),
       ),
     );
   }
@@ -121,6 +175,7 @@ class ApiClient {
   Future<Map<String, dynamic>> upload(
     String path, {
     required FormData data,
+    Map<String, Object?>? headers,
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
     bool authenticated = true,
@@ -131,7 +186,7 @@ class ApiClient {
         data: data,
         cancelToken: cancelToken,
         onSendProgress: onSendProgress,
-        options: _options(authenticated),
+        options: _options(authenticated, headers: headers),
       ),
     );
   }
@@ -182,8 +237,21 @@ class ApiClient {
     }
   }
 
-  Options _options(bool authenticated) {
+  Options _options(
+    bool authenticated, {
+    Map<String, Object?>? headers,
+    String? contentType,
+    Set<int> acceptedStatusCodes = const {},
+  }) {
     return Options(
+      headers: headers,
+      contentType: contentType,
+      validateStatus: acceptedStatusCodes.isEmpty
+          ? null
+          : (status) =>
+                status != null &&
+                ((status >= 200 && status < 300) ||
+                    acceptedStatusCodes.contains(status)),
       extra: {if (!authenticated) AuthInterceptor.skipAuthKey: true},
     );
   }

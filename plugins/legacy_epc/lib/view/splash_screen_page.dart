@@ -7,7 +7,7 @@ import 'package:epeoplecare/view/verification/verification_setup_page.dart';
 import 'package:epeoplecare/view/verification/verification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+
 
 class SplashScreenPage extends StatefulWidget {
   const SplashScreenPage({super.key});
@@ -40,13 +40,6 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
                   : const VerificationSetupPage(isTwoFactorAuthentication: true)
         ),
       );
-    });
-  }
-
-  initPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
-    setState(() {
-      Config.packageInfo = info;
     });
   }
 

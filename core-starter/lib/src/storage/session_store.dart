@@ -20,6 +20,13 @@ final class SessionStore {
     return ++_version;
   }
 
+  /// Invalidates requests from the current generation without touching storage.
+  /// Use this when another atomic owner already removed persisted tokens.
+  void invalidate() {
+    _blocked = true;
+    ++_version;
+  }
+
   Future<String?> readAccessToken() => _read(_storage.readAccessToken);
 
   Future<String?> readRefreshToken() => _read(_storage.readRefreshToken);
@@ -48,8 +55,7 @@ final class SessionStore {
   });
 
   Future<void> clearTokens() {
-    _blocked = true;
-    ++_version;
+    invalidate();
     return _serialize(_storage.clearTokens);
   }
 

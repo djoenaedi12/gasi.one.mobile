@@ -6,8 +6,8 @@ runtime infrastructure, shared UI, a deployable platform application, and
 business capabilities organized as plugins.
 
 The repository is currently in a legacy-parity transition. `platform-app`
-produces the Android/iOS application, while `plugins/legacy_epc` temporarily
-owns the active application shell and existing EPC business flows. New features
+owns startup, shared services, the application shell, and the Android/iOS
+application. `plugins/legacy_epc` temporarily owns existing EPC feature pages. New features
 will move into the modular architecture incrementally.
 
 ## Architecture Diagram
@@ -20,9 +20,9 @@ will move into the modular architecture incrementally.
                 │ packaged by
        ┌────────┴────────┐   launches   ┌─────────────────┐
        │ platform-app    │ ───────────▶ │ legacy_epc      │
-       │ Flutter host    │              │ current runtime │
+       │ Flutter host    │              │ legacy pages    │
        └────────┬────────┘              └─────────────────┘
-                │ future composition
+                │ plugin composition
        ┌────────┴────────┐              ┌─────────────────┐
        │ plugins/*       │ ───────────▶ │ core-api        │
        │ business slices │   contracts  │ platform SPI    │
@@ -47,6 +47,9 @@ gasi.one.mobile
 ├── core-ui
 ├── platform-app
 └── plugins
+    ├── auth
+    ├── business_context
+    ├── attendance
     └── legacy_epc
 ```
 
@@ -58,8 +61,14 @@ gasi.one.mobile
   presentation utilities.
 - `platform-app`: deployable Flutter application, Android/iOS projects, Store
   version, signing, native capabilities, assets, and composition root.
-- `plugins/legacy_epc`: temporary package containing the current EPC shell,
-  legacy navigation, session behavior, UI, and business modules.
+- `plugins/auth`: registration skeleton and shared auth contracts; the Pre-Home
+  CR supplies migrated authentication pages and implementation.
+- `plugins/business_context`: user/license/menu/device bootstrap, typed active
+  employee/context, and best-effort backend push registration.
+- `plugins/attendance`: generic request workspace, workflow transport, picker,
+  form/detail, and selection/bulk foundation.
+- `plugins/legacy_epc`: existing Company/Login/verification, Home, and business
+  pages behind the public composition boundary.
 - future `plugins/*`: independently organized business capabilities compiled
   into `platform-app` and exposed through stable integration contracts.
 
@@ -70,25 +79,25 @@ vertical slices are migrated.
 
 ## Current Runtime
 
-The executable currently delegates directly to the legacy entry point:
+The executable starts platform-owned bootstrap:
 
 ```dart
-import 'package:epeoplecare/main.dart' as legacy;
+import 'bootstrap.dart';
 
-void main() => legacy.main();
+void main() => bootstrap();
 ```
 
-This is intentional. The current goals are:
+`StartupGate` owns initialization/retry and disposal. `GasioneApp` composes one
+MaterialApp, theme/localization, shared HTTP/session services, plugin routes,
+and the legacy fallback. The generic `AppEntryPage` restores installed state;
+authentication pages and all attendance feature routes still belong to legacy.
+The five-second splash, migrated auth UI, and the three attendance vertical
+slices belong to the combined CR branch.
 
-1. preserve production EPC behavior and appearance;
-2. publish from the new `platform-app` native projects;
-3. validate Android and iOS parity;
-4. introduce stable seams around the legacy runtime;
-5. migrate auth and business features one vertical slice at a time.
-
-No sample auth or catalog implementation is active in the current production
-dependency graph. New production features must use real EPC contracts and data
-sources.
+See [Foundation and CR boundaries](docs/mobile-cr-foundation.md) for prerequisite
+coverage and the local branch/worktree handoff. See [Platform foundation](docs/platform-foundation.md)
+for runtime ownership. Run `bash tool/verify.sh` to check modular formatting,
+architecture, analysis, and tests. Legacy lint debt is tracked separately.
 
 ## Dependency Direction
 
@@ -185,9 +194,9 @@ Select a device explicitly when needed:
 flutter run -d <device-id>
 ```
 
-The current app starts the legacy EPC runtime. Tenant selection, login, OTP,
-session restore, legacy navigation, Firebase initialization, notifications,
-location, and existing business pages continue to be owned by `legacy_epc`.
+The platform owns startup, Firebase, notifications, the app shell, and generic
+session restoration. Tenant selection, login, OTP, local verification, location,
+and business pages continue through legacy integration on main.
 
 ## Build
 
@@ -237,8 +246,8 @@ bash tool/verify.sh
 ```
 
 The script checks formatting for the modular core/platform source,
-architecture boundaries, workspace analysis, and available core/platform test
-suites.
+architecture boundaries, strict modular analysis plus the legacy integration
+surface, and available core/platform/plugin test suites.
 
 Useful focused commands:
 
@@ -354,10 +363,11 @@ complete. Legacy source is not deleted in the first cutover release.
 - Firebase platform files;
 - release artifacts.
 
-`legacy_epc` currently owns the Dart-side Firebase initialization, messaging
-behavior, local notification behavior, location calls, session, theme, and
-legacy navigation. Do not initialize Firebase a second time from
-`core-starter` while this ownership remains active.
+`platform-app` owns Firebase options and initialization; core-starter supplies
+notification services. Legacy pages use injected runtime/push contracts. The
+platform also owns theme/localization/navigation composition. Legacy keeps
+feature UI, update policies, and the temporary Config mapping. See
+[Platform foundation](docs/platform-foundation.md) before changing ownership.
 
 Signing files, keystore passwords, APNs credentials, Firebase secrets, tokens,
 and production payloads must never be committed or copied into documentation.
