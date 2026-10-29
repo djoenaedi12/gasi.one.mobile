@@ -3,11 +3,12 @@
 // after Home and remaining EPC pages consume the new context directly.
 import 'package:epeoplecare/config.dart';
 import 'package:epeoplecare/model/license.dart';
-import 'package:epeoplecare/model/user.dart';
 import 'package:epeoplecare/model/verification_type.dart';
 import 'package:epeoplecare/provider/appearance_setting_provider.dart';
 import 'package:epeoplecare/provider/client_provider.dart';
 import 'package:epeoplecare/provider/enum_provider.dart';
+import 'package:epeoplecare/provider/license_provider.dart';
+import 'package:epeoplecare/model/parameter.dart';
 import 'package:epeoplecare/provider/session_provider.dart';
 import 'package:epeoplecare/provider/string_provider.dart';
 import 'package:epeoplecare/repository/repository.dart';
@@ -29,24 +30,17 @@ final class LegacyInstalledBusinessState {
   final bool verificationConfigured;
 }
 
-final class LegacyLicenseSnapshot {
-  const LegacyLicenseSnapshot({
-    required this.value,
-    required this.expiryDate,
-    required this.modules,
-    required this.companyCode,
-    required this.hostName,
-  });
-
-  final String value;
-  final String expiryDate;
-  final List<String> modules;
-  final String companyCode;
-  final String hostName;
-}
-
 final class LegacyBusinessContextBridge {
-  LegacyBusinessContextBridge(this._preferences, this._onChanged);
+  LegacyBusinessContextBridge(
+    this._preferences,
+    this._onChanged, {
+    bool Function()? isActive,
+  }) : _isActive = isActive ?? _alwaysActive;
+  final bool Function() _isActive;
+  static bool _alwaysActive() => true;
+  void _ensureActive() {
+    if (!_isActive()) throw StateError('Legacy restore was abandoned.');
+  }
 
   final SharedPreferences _preferences;
   final VoidCallback _onChanged;
@@ -94,6 +88,7 @@ final class LegacyBusinessContextBridge {
       );
     }
     client = await repairLegacyCompany(client);
+    _ensureActive();
     Config.appearanceSetting = appearance;
     Config.client = client;
     Config.DEFAULT_COLOR =
@@ -113,6 +108,7 @@ final class LegacyBusinessContextBridge {
       );
     }
     final session = await SessionProvider().getSession('');
+    _ensureActive();
     Config.session = session;
     _onChanged();
     return LegacyInstalledBusinessState(
@@ -122,35 +118,50 @@ final class LegacyBusinessContextBridge {
     );
   }
 
-  void install({
-    required Map<String, dynamic> userPayload,
-    required LegacyLicenseSnapshot? license,
-    required String serverTimezone,
-    required bool showDisabledMenu,
-    required bool switchAccountEnabled,
-    required bool isManager,
-  }) {
-    final user = User.fromJson(userPayload);
-    if (user == null) throw StateError('Legacy user mapping failed.');
+  /// TRANSITION[LEGACY-BUSINESS-CONTEXT]: keep restoration in the existing
+  /// runtime until the CR installs the business-context plugin.
+  Future<AuthStatus> restore() async {
+    final installed = await restoreInstalledState();
+    _ensureActive();
+    if (!installed.hasCompany) return AuthStatus.companyRequired;
+    final username = installed.username;
+    if (username == null) return AuthStatus.loginRequired;
+    final session = Config.session;
+    final repositories = Repository();
+    final user = await repositories.getUserRepository().findByUsername(
+      username,
+    );
+    _ensureActive();
+    if (user == null) throw StateError('Could not restore the installed user.');
+    if (Config.deviceId.isNotEmpty) {
+      await repositories.getUserRepository().setDeviceId(
+        deviceId: Config.deviceId,
+      );
+    }
+    final values = await Future.wait<Object?>([
+      LicenseProvider().getLicenseModel().then(
+        (value) async =>
+            value ?? await repositories.getLicenseRepository().getLicense(),
+      ),
+      repositories.getParameterRepository().getTimeZone(),
+      repositories.getParameterRepository().getShowDisabledMenu(),
+      repositories.getParameterRepository().getSwitchAccount(),
+      repositories.getEmployeeRepository().isManager(),
+    ]);
+    _ensureActive();
+    if (!identical(Config.session, session)) {
+      throw StateError('The installed session changed.');
+    }
     Config.user = user;
-    Config.license = license == null
-        ? null
-        : License(
-            license.value,
-            license.expiryDate,
-            [...license.modules],
-            license.companyCode,
-            license.hostName,
-          );
-    Config.serverTimezone = serverTimezone;
-    Config.showDisabledMenu = showDisabledMenu;
-    Config.switchAccount = switchAccountEnabled;
-    Config.isManager = isManager;
+    Config.license = values[0] as License?;
+    Config.serverTimezone = (values[1] as Parameter?)?.value ?? '+07:00';
+    Config.showDisabledMenu = (values[2] as Parameter?)?.value != '0';
+    Config.switchAccount = (values[3] as Parameter?)?.value == '1';
+    Config.isManager = values[4] as bool;
     _onChanged();
-  }
-
-  void installPushToken(String token) {
-    Config.fcmToken = token;
+    return installed.verificationConfigured
+        ? AuthStatus.verificationRequired
+        : AuthStatus.verificationSetupRequired;
   }
 }
 

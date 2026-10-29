@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
-import 'package:gasione_plugin_attendance/gasione_plugin_attendance.dart';
 
 final class _Context implements BusinessContextProvider {
   final changes = StreamController<ActiveBusinessContext?>.broadcast();

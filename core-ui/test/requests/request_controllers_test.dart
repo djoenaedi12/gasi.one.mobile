@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
-import 'package:gasione_plugin_attendance/gasione_plugin_attendance.dart';
+import 'package:gasione_core_ui/gasione_core_ui.dart';
 
 PageResult<int> _page(List<int> items, {int page = 0, int totalPages = 1}) =>
     PageResult(

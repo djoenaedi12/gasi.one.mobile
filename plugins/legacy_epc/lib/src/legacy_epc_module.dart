@@ -11,6 +11,7 @@ import 'package:epeoplecare/view/verification/verification_page.dart';
 import 'package:epeoplecare/view/verification/verification_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'legacy_business_context_bridge.dart';
 
@@ -23,6 +24,7 @@ import 'legacy_business_context_bridge.dart';
 class LegacyEpcModule extends ChangeNotifier
     implements BusinessContextProvider {
   LegacyEpcModule({
+    required SharedPreferences preferences,
     required AppRuntime runtime,
     required PushTokenProvider notifications,
     required GlobalKey<NavigatorState> navigatorKey,
@@ -32,6 +34,12 @@ class LegacyEpcModule extends ChangeNotifier
     required this._directoryToken,
     this.onError,
   }) {
+    _preferences = preferences;
+    _bridge = LegacyBusinessContextBridge(
+      preferences,
+      businessContextChanged,
+      isActive: () => !_disposed,
+    );
     Config.runtime = runtime;
     Config.notifications = notifications;
     Config.navigatorKey = navigatorKey;
@@ -46,6 +54,34 @@ class LegacyEpcModule extends ChangeNotifier
   onError;
   bool _started = false;
   bool _disposed = false;
+
+  late final SharedPreferences _preferences;
+  late final LegacyBusinessContextBridge _bridge;
+  StreamSubscription<String>? _pushSubscription;
+  Future<AuthStatus>? _restoration;
+  Future<AuthStatus> restore() =>
+      _restoration ??= _restore().whenComplete(() => _restoration = null);
+  Future<AuthStatus> _restore() async {
+    final status = await _bridge.restore();
+    if (!_disposed && Config.user != null) unawaited(_registerCurrentToken());
+    return status;
+  }
+
+  Future<void> _registerCurrentToken() => _run('push_registration', () async {
+    final token = await Config.notifications.getToken();
+    if (token != null) await _registerPush(token);
+  });
+  Future<void> _registerPush(String token) =>
+      _run('push_registration', () async {
+        final session = Config.session;
+        if (session == null || Config.user == null) return;
+        await Repository().getUserRepository().setFcm(token: token);
+        if (_disposed || !identical(Config.session, session)) return;
+        await _preferences.setString('fcmToken', token);
+        if (!_disposed && identical(Config.session, session)) {
+          Config.fcmToken = token;
+        }
+      });
 
   final _contextChanges = StreamController<ActiveBusinessContext?>.broadcast();
   Object? _session;
@@ -120,6 +156,9 @@ class LegacyEpcModule extends ChangeNotifier
     if (_started || _disposed) return;
     _started = true;
     unawaited(_run('update_check', _checkForUpdates));
+    _pushSubscription = Config.notifications.tokenRefreshes.listen(
+      (token) => unawaited(_registerPush(token)),
+    );
   }
 
   /// TRANSITION[LEGACY-BUSINESS-CONTEXT]: called only by the platform adapter
@@ -183,6 +222,7 @@ class LegacyEpcModule extends ChangeNotifier
   @override
   void dispose() {
     _disposed = true;
+    unawaited(_pushSubscription?.cancel());
     unawaited(_contextChanges.close());
     super.dispose();
   }

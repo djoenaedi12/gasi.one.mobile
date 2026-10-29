@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
-import 'package:gasione_core_ui/gasione_core_ui.dart';
 
+import '../../design_system/patterns/app_empty_view.dart';
+import '../../design_system/patterns/app_error_view.dart';
 import '../application/request_list_controller.dart';
 import '../localization/request_localizations.dart';
 

@@ -16,9 +16,6 @@ dependencies:
   gasione_core_api: ^0.1.0
   gasione_core_starter: ^0.1.0
   gasione_core_ui: ^0.1.0
-  gasione_plugin_attendance: ^0.1.0
-  gasione_plugin_auth: ^0.1.0
-  gasione_plugin_business_context: ^0.1.0
   firebase_core: ^4.15.0
   flutter_local_notifications: ^22.3.1
   shared_preferences: ^2.5.5

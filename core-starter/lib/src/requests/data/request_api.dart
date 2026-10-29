@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:gasione_core_starter/gasione_core_starter.dart';
+import 'package:gasione_core_api/gasione_core_api.dart';
+
+import '../../network/api_client.dart';
+import '../../network/api_exception.dart';
+import '../../result/result_guard.dart';
 
 /// Shared transport for the installed API. Features supply endpoint and mapping.
 final class RequestApi {

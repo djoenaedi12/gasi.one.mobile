@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
-import 'package:gasione_plugin_attendance/gasione_plugin_attendance.dart';
 
 final class _Context implements BusinessContextProvider {
   ActiveBusinessContext? value = ActiveBusinessContext(

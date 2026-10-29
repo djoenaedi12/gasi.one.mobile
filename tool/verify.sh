@@ -2,7 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 flutter pub get --offline
-packages=(core-api core-starter core-ui platform-app plugins/auth plugins/business_context plugins/attendance)
+packages=(core-api core-starter core-ui platform-app)
+for package in plugins/*; do
+  if [[ "$package" != plugins/legacy_epc && -f "$package/pubspec.yaml" ]]; then packages+=("$package"); fi
+done
 format_paths=(tool plugins/legacy_epc/lib/src plugins/legacy_epc/lib/legacy_epc.dart)
 for package in "${packages[@]}"; do
   format_paths+=("$package/lib")

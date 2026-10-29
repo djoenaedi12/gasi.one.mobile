@@ -47,9 +47,6 @@ gasi.one.mobile
 ├── core-ui
 ├── platform-app
 └── plugins
-    ├── auth
-    ├── business_context
-    ├── attendance
     └── legacy_epc
 ```
 
@@ -61,12 +58,6 @@ gasi.one.mobile
   presentation utilities.
 - `platform-app`: deployable Flutter application, Android/iOS projects, Store
   version, signing, native capabilities, assets, and composition root.
-- `plugins/auth`: registration skeleton and shared auth contracts; the Pre-Home
-  CR supplies migrated authentication pages and implementation.
-- `plugins/business_context`: user/license/menu/device bootstrap, typed active
-  employee/context, and best-effort backend push registration.
-- `plugins/attendance`: generic request workspace, workflow transport, picker,
-  form/detail, and selection/bulk foundation.
 - `plugins/legacy_epc`: existing Company/Login/verification, Home, and business
   pages behind the public composition boundary.
 - future `plugins/*`: independently organized business capabilities compiled
@@ -89,7 +80,8 @@ void main() => bootstrap();
 
 `StartupGate` owns initialization/retry and disposal. `GasioneApp` composes one
 MaterialApp, theme/localization, shared HTTP/session services, plugin routes,
-and the legacy fallback. The generic `AppEntryPage` restores installed state;
+and the legacy fallback. Main contains only `plugins/legacy_epc`; all other
+plugin packages and their wiring belong to the combined CR branch. The generic `AppEntryPage` restores installed state;
 authentication pages and all attendance feature routes still belong to legacy.
 The five-second splash, migrated auth UI, and the three attendance vertical
 slices belong to the combined CR branch.

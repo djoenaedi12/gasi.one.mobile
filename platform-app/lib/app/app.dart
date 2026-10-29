@@ -11,14 +11,10 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
-import 'package:gasione_plugin_attendance/gasione_plugin_attendance.dart';
-import 'package:gasione_plugin_auth/gasione_plugin_auth.dart';
-import 'package:gasione_plugin_business_context/gasione_plugin_business_context.dart';
 
 import 'app_dependencies.dart';
 import 'app_entry_page.dart';
 import 'app_theme.dart';
-import 'compatibility/legacy_business_context_adapter.dart';
 import 'plugin_route_bridge.dart';
 
 /// The host owns the application shell; features provide pages and routes.
@@ -74,13 +70,9 @@ class _AppShellState extends State<_AppShell> {
   // TRANSITION[LEGACY-EPC]: module creation, startup, listeners, and disposal
   // retire together once the new plugins own these responsibilities.
   LegacyEpcModule? _legacy;
-  late final AuthPlugin _auth;
   late final ApiClient _api;
   late final AuthRestorer _restorer;
   late final PluginRouteBridge _routes;
-  late final AttendancePlugin _attendance;
-  BusinessContextPlugin? _businessContext;
-  LegacyBusinessContextAdapter? _legacyContextAdapter;
 
   @override
   void didChangeDependencies() {
@@ -88,6 +80,7 @@ class _AppShellState extends State<_AppShell> {
     if (_legacy != null) return;
     final dependencies = widget.dependencies;
     _legacy = LegacyEpcModule(
+      preferences: dependencies.preferences,
       runtime: dependencies.runtime,
       notifications: dependencies.notifications,
       navigatorKey: dependencies.navigatorKey,
@@ -98,36 +91,17 @@ class _AppShellState extends State<_AppShell> {
       onError: _reportIssue,
     )..addListener(_refreshTheme);
     final legacy = _legacy!;
-    _auth = AuthPlugin(pageRoutes: legacy.authPageRoutes);
-    _legacyContextAdapter = LegacyBusinessContextAdapter(
-      dependencies.preferences,
-      legacy.businessContextChanged,
-    );
     _api = ApiClient(
       tokenStorage: InstalledTokenStorage(dependencies.preferences),
       refreshTokens: refreshLegacyTokens,
       enableLogging: false,
     );
-    _restorer = _CallbackRestorer(_restoreBusinessSession);
-    _attendance = AttendancePlugin(
-      context: legacy,
-      api: RequestApi(
-        client: _api,
-        context: legacy,
-        headers: dependencies.requestHeaders,
-      ),
-    );
-    _routes = PluginRouteBridge([
-      ..._auth.pageRoutes,
-      ..._attendance.pageRoutes,
-    ], fallback: buildLegacyRoute);
-    _businessContext = dependencies.createBusinessContextPlugin(
-      api: _api,
-      onPushRegistered: _legacyContextAdapter!.installPushToken,
-      onError: _reportIssue,
+    _restorer = _CallbackRestorer(legacy.restore);
+    _routes = PluginRouteBridge(
+      legacy.authPageRoutes,
+      fallback: buildLegacyRoute,
     );
     _api.setSessionExpiredHandler(() async {
-      _businessContext?.clear();
       legacy.clearSessionContext();
       if (mounted) {
         unawaited(
@@ -141,7 +115,6 @@ class _AppShellState extends State<_AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _legacy!.start();
-      _businessContext!.start();
       unawaited(
         dependencies.requestNotificationPermission().catchError(
           (Object error, StackTrace stack) =>
@@ -159,7 +132,6 @@ class _AppShellState extends State<_AppShell> {
     if (current != _sessionId) {
       _sessionId = current;
       _api.sessionStore.beginSession();
-      if (current == null) _businessContext?.clear();
     }
     _legacy!.refreshContext();
     if (_refreshQueued) return;
@@ -171,25 +143,9 @@ class _AppShellState extends State<_AppShell> {
     WidgetsBinding.instance.ensureVisualUpdate();
   }
 
-  Future<AuthStatus> _restoreBusinessSession() async {
-    final installed = await _legacyContextAdapter!.restoreInstalledState();
-    if (!installed.hasCompany) return AuthStatus.companyRequired;
-    final username = installed.username;
-    if (username == null) return AuthStatus.loginRequired;
-    final context = await _businessContext!.load(
-      username: username,
-      validateDevice: false,
-    );
-    _legacyContextAdapter!.install(context);
-    return installed.verificationConfigured
-        ? AuthStatus.verificationRequired
-        : AuthStatus.verificationSetupRequired;
-  }
-
   @override
   void dispose() {
     _api.close();
-    unawaited(_businessContext?.dispose());
     _legacy?.removeListener(_refreshTheme);
     _legacy?.dispose();
     super.dispose();
@@ -211,8 +167,6 @@ class _AppShellState extends State<_AppShell> {
         debugShowCheckedModeBanner: false,
         navigatorKey: widget.dependencies.navigatorKey,
         localizationsDelegates: [
-          ..._auth.localizationsDelegates,
-          ..._attendance.localizationsDelegates,
           ...context.localizationDelegates,
           AppLocalizations.delegate,
         ],

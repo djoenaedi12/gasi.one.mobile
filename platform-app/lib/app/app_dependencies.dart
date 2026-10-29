@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
-import 'package:gasione_plugin_business_context/gasione_plugin_business_context.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_options.dart';
@@ -30,20 +29,6 @@ class AppDependencies {
     'Version': runtime.info.version,
     'Accept-Language': preferences.getString('language') ?? 'en',
   };
-  BusinessContextPlugin createBusinessContextPlugin({
-    required ApiClient api,
-    void Function(String token)? onPushRegistered,
-    void Function(String operation, Object error, StackTrace stack)? onError,
-  }) => BusinessContextPlugin(
-    api: api,
-    runtime: runtime,
-    notifications: notifications,
-    preferences: preferences,
-    baseUrl: () => preferences.getString('url') ?? '',
-    language: () => preferences.getString('language') ?? 'en',
-    onPushRegistered: onPushRegistered,
-    onError: onError,
-  );
   // TRANSITION[LEGACY-EPC]: compatibility getter for Config.cameraPreference.
   // Move ownership to the camera/settings capability when its callers migrate.
   String get cameraPreference {

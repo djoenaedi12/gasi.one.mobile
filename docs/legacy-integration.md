@@ -1,7 +1,7 @@
 # Legacy EPC Integration Runbook
 
 > Foundation update (29 October 2026): startup and the application shell now
-> belong to `platform-app`. Auth/attendance UI cutover remains in the CR branch.
+> belong to `platform-app`. All plugins except legacy_epc belong to the CR branch.
 > [Current ownership and prerequisite coverage](mobile-cr-foundation.md) supersedes
 > historical runtime/status descriptions below. Native release checks remain applicable.
 
