@@ -8,7 +8,6 @@ import 'package:epeoplecare/view/verification/verification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-
 class SplashScreenPage extends StatefulWidget {
   const SplashScreenPage({super.key});
 
@@ -17,15 +16,13 @@ class SplashScreenPage extends StatefulWidget {
 }
 
 class _SplashScreenPageState extends State<SplashScreenPage> {
-  
   @override
   void initState() {
     super.initState();
     startSplashScreen();
   }
 
-  startSplashScreen() async {
-    await initPackageInfo();
+  Timer startSplashScreen() {
     var duration = const Duration(seconds: 2);
     return Timer(duration, () {
       Navigator.pushReplacement(
@@ -33,11 +30,11 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
         MaterialPageRoute(
           builder: (context) => Config.client == null
               ? const ClientPage()
-                : Config.session == null || Config.user == null
-                ? const LoginPage() 
-                  : Config.verificationType != null
-                  ? VerificationPage(verificationType: Config.verificationType!)
-                  : const VerificationSetupPage(isTwoFactorAuthentication: true)
+              : Config.session == null || Config.user == null
+              ? const LoginPage()
+              : Config.verificationType != null
+              ? VerificationPage(verificationType: Config.verificationType!)
+              : const VerificationSetupPage(isTwoFactorAuthentication: true),
         ),
       );
     });
@@ -53,15 +50,13 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
           child: Column(
             children: [
               Expanded(
-                child:Image.asset(
+                child: Image.asset(
                   "assets/img/logo.png",
                   width: 200.0,
                   height: 200.0,
                 ),
               ),
-              Text(
-                "${"Version".tr()} ${Config.packageInfo.version}",
-              ),
+              Text("${"Version".tr()} ${Config.packageInfo.version}"),
             ],
           ),
         ),
