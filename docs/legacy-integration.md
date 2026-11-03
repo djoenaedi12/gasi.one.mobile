@@ -63,7 +63,7 @@ Do not combine the initial integration with any of the following:
 - replacing global state, providers, or service locators with Cubits;
 - redesigning legacy pages;
 - changing client-specific colors or the legacy theme;
-- replacing `EasyLocalization`, `AdaptiveTheme`, or `EasyLoading`;
+- replacing `EasyLocalization`;
 - moving every model and repository into the new architecture;
 - initializing Firebase a second time from `core-starter`;
 - enabling a sample auth or catalog implementation in the production runtime.

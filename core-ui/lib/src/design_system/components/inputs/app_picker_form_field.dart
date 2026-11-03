@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gasione_core_ui/src/design_system/components/inputs/app_field_error.dart';
 import 'package:gasione_core_ui/src/design_system/components/typography/app_label.dart';
+import 'package:gasione_core_ui/src/design_system/foundations/app_radius.dart';
 import 'package:gasione_core_ui/src/design_system/foundations/app_spacing.dart';
 
-/// A form field that opens a separate page and stores its selected value.
+/// A form field that opens a picker and stores its selected value.
 ///
-/// The page itself is supplied by the caller, allowing the component to remain
+/// The picker launcher is supplied by the caller, allowing the component to remain
 /// independent of every feature or plugin that provides a picker.
-class AppPickerFormField<T> extends StatelessWidget {
+class AppPickerFormField<T> extends StatefulWidget {
   const AppPickerFormField({
     required this.label,
     required this.value,
@@ -38,71 +39,90 @@ class AppPickerFormField<T> extends StatelessWidget {
   final AutovalidateMode autovalidateMode;
 
   @override
+  State<AppPickerFormField<T>> createState() => _AppPickerFormFieldState<T>();
+}
+
+class _AppPickerFormFieldState<T> extends State<AppPickerFormField<T>> {
+  bool _picking = false;
+
+  @override
   Widget build(BuildContext context) {
     final field = FormField<T>(
-      key: ValueKey(value),
-      initialValue: value,
-      enabled: enabled,
-      validator: validator,
-      forceErrorText: errorText,
-      autovalidateMode: autovalidateMode,
+      key: ValueKey(widget.value),
+      initialValue: widget.value,
+      enabled: widget.enabled,
+      validator: widget.validator,
+      forceErrorText: widget.errorText,
+      autovalidateMode: widget.autovalidateMode,
       builder: (fieldState) {
-        final canInteract = enabled && onChanged != null;
+        final canInteract =
+            widget.enabled && widget.onChanged != null && !_picking;
         final selected = fieldState.value;
 
         return Semantics(
           button: true,
           enabled: canInteract,
-          label: label,
+          label: widget.label,
           child: InkWell(
-            onTap: canInteract ? () => _openPicker(context, fieldState) : null,
-            borderRadius: BorderRadius.circular(12),
+            onTap: canInteract ? () => _openPicker(fieldState) : null,
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: InputDecorator(
               isEmpty: selected == null,
               decoration: InputDecoration(
                 enabled: canInteract,
-                label: labelAbove
+                label: widget.labelAbove
                     ? null
                     : AppLabel(
-                        text: label,
-                        requiredIndicator: requiredIndicator,
+                        text: widget.label,
+                        requiredIndicator: widget.requiredIndicator,
                       ),
-                hintText: hint,
+                hintText: widget.hint,
                 error: fieldState.errorText == null
                     ? null
                     : AppInputDecorationError(fieldState.errorText!),
                 suffixIcon: const Icon(Icons.chevron_right),
               ),
-              child: selected == null ? null : Text(labelOf(selected)),
+              child: selected == null ? null : Text(widget.labelOf(selected)),
             ),
           ),
         );
       },
     );
 
-    if (!labelAbove) {
+    if (!widget.labelAbove) {
       return field;
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppLabel(text: label, requiredIndicator: requiredIndicator),
+        AppLabel(
+          text: widget.label,
+          requiredIndicator: widget.requiredIndicator,
+        ),
         const SizedBox(height: AppSpacing.xs),
         field,
       ],
     );
   }
 
-  Future<void> _openPicker(
-    BuildContext context,
-    FormFieldState<T> field,
-  ) async {
-    final selected = await onPick(context);
-    if (selected == null || !context.mounted) {
-      return;
+  Future<void> _openPicker(FormFieldState<T> field) async {
+    if (_picking || !widget.enabled || widget.onChanged == null) return;
+    setState(() => _picking = true);
+    try {
+      final selected = await widget.onPick(context);
+      // An external value update can replace the FormField while this state
+      // remains mounted. Do not apply a late result to that abandoned field.
+      if (!mounted ||
+          !field.mounted ||
+          !widget.enabled ||
+          widget.onChanged == null ||
+          selected == null) {
+        return;
+      }
+      field.didChange(selected);
+      widget.onChanged?.call(selected);
+    } finally {
+      if (mounted) setState(() => _picking = false);
     }
-
-    field.didChange(selected);
-    onChanged?.call(selected);
   }
 }

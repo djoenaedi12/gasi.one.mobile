@@ -13,14 +13,37 @@ class AppInfo {
   final String buildNumber;
 }
 
+/// Observations from native checks, before any access policy is applied.
+class DeviceSecurityReport {
+  const DeviceSecurityReport({
+    required this.jailbroken,
+    required this.realDevice,
+    required this.developmentMode,
+    required this.externalStorage,
+    required this.signatureValid,
+  });
+
+  final bool jailbroken;
+  final bool realDevice;
+  final bool developmentMode;
+  final bool externalStorage;
+  final bool signatureValid;
+}
+
+/// Policy result consumed by the host and temporary legacy adapters.
 class DeviceSecurity {
   const DeviceSecurity({
     required this.unsafeDevice,
     required this.signatureValid,
+    this.report,
   });
 
   final bool unsafeDevice;
   final bool signatureValid;
+
+  /// Native observations for explaining which requirements were not met.
+  /// Older adapters may supply only the aggregate result.
+  final DeviceSecurityReport? report;
 }
 
 /// Created once by the host before any feature sends requests.

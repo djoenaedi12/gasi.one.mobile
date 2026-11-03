@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 
+import '../../design_system/components/buttons/app_button.dart';
+import '../../design_system/components/typography/app_text.dart';
+import '../../design_system/foundations/app_spacing.dart';
+import '../../localization/failure_localization.dart';
+import '../../localization/l10n/app_localizations.dart';
 import '../localization/request_localizations.dart';
 
 Future<T?> showRequestModal<T>(
@@ -34,13 +39,13 @@ Future<String?> showRequestRemarkDialog(
           maxLines: 3,
         ),
         actions: [
-          TextButton(
+          AppButton.ghost(
+            label: strings.cancel,
             onPressed: () => Navigator.pop(context),
-            child: Text(strings.cancel),
           ),
-          FilledButton(
+          AppButton.primary(
+            label: title,
             onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(title),
           ),
         ],
       ),
@@ -168,13 +173,13 @@ class RequestFormScaffold extends StatefulWidget {
 class _RequestFormScaffoldState extends State<RequestFormScaffold> {
   final _form = GlobalKey<FormState>();
   bool _busy = false;
-  bool _failed = false;
+  Failure? _failure;
   Future<void> _save(WorkflowAction action) async {
     if (_busy || !_form.currentState!.validate()) return;
     _form.currentState!.save();
     setState(() {
       _busy = true;
-      _failed = false;
+      _failure = null;
     });
     Result<void> result;
     try {
@@ -183,14 +188,15 @@ class _RequestFormScaffoldState extends State<RequestFormScaffold> {
       result = const FailureResult(UnknownFailure());
     }
     if (!mounted) return;
-    if (result is Success<void>) {
-      Navigator.pop(context, true);
-      return;
+    switch (result) {
+      case Success<void>():
+        Navigator.pop(context, true);
+      case FailureResult<void>(:final failure):
+        setState(() {
+          _busy = false;
+          _failure = failure is CancelledFailure ? null : failure;
+        });
     }
-    setState(() {
-      _busy = false;
-      _failed = true;
-    });
   }
 
   @override
@@ -203,10 +209,14 @@ class _RequestFormScaffoldState extends State<RequestFormScaffold> {
         body: Form(
           key: _form,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             children: [
               if (_busy) const LinearProgressIndicator(),
-              if (_failed) Text(strings.failed),
+              if (_failure != null)
+                AppText(
+                  _failure!.localizedMessage(AppLocalizations.of(context)),
+                  tone: AppTextTone.error,
+                ),
               IgnorePointer(
                 ignoring: _busy,
                 child: Column(children: widget.sections),
@@ -216,15 +226,13 @@ class _RequestFormScaffoldState extends State<RequestFormScaffold> {
         ),
         bottomNavigationBar: SafeArea(
           child: Wrap(
-            spacing: 12,
+            spacing: AppSpacing.sm,
             children: [
               for (final action in widget.actions)
-                FilledButton(
+                AppButton.primary(
                   onPressed: _busy ? null : () => _save(action),
-                  child: Text(
-                    strings.status(
-                      action == WorkflowAction.draft ? 'DRAFTED' : 'SUBMITTED',
-                    ),
+                  label: strings.status(
+                    action == WorkflowAction.draft ? 'DRAFTED' : 'SUBMITTED',
                   ),
                 ),
             ],

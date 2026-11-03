@@ -56,8 +56,6 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     AlertProvider.showUpdateAvailableDialog();
-    AlertProvider.showUnSafeDeviceDialog();
-    AlertProvider.showSignatureDialog();
     _getSystemAnnouncement();
   }
 

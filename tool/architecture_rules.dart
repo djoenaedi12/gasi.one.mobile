@@ -5,6 +5,15 @@ String? dependencyViolation({
   required String targetPackage,
   required String targetPath,
 }) {
+  // TRANSITION[LEGACY-LOADING]: existing EPC callers migrate with their pages.
+  if (targetPackage == 'flutter_easyloading' &&
+      sourcePackage != 'epeoplecare' &&
+      (sourcePackage != 'gasione_core_ui' ||
+          !sourcePath.endsWith(
+            '/src/design_system/components/feedback/app_loading.dart',
+          ))) {
+    return 'Use AppLoading from core-ui instead of importing flutter_easyloading.';
+  }
   final isCore = sourcePackage.startsWith('gasione_core_');
   final isPlugin = sourcePackage.startsWith('gasione_plugin_');
   final targetIsPlugin = targetPackage.startsWith('gasione_plugin_');

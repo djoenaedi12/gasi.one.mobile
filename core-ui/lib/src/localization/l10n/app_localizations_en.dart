@@ -206,4 +206,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadMore => 'Load more';
+
+  @override
+  String get unsafeDeviceTitle => 'Device Does Not Meet Security Standard';
+
+  @override
+  String get unsafeDeviceMessage =>
+      'GASI:One requires a physical device without root or jailbreak, with developer mode disabled, and the app installed in internal storage.\n\nUse another device if it is rooted, jailbroken, or an emulator. Disable developer mode, or reinstall in internal storage if needed.\n\nContact your administrator if you need help.';
+
+  @override
+  String get invalidApplicationTitle => 'Invalid application';
+
+  @override
+  String get invalidApplicationMessage =>
+      'The application signature is invalid. Please reinstall the application from the official store.';
+
+  @override
+  String get exitApplication => 'Exit';
+
+  @override
+  String get unsafeDeviceIntroduction =>
+      'For your data’s safety, GASI:One only runs on devices that meet these requirements:';
+
+  @override
+  String get deviceIntegrityRequirement =>
+      'Not rooted, jailbroken, or an emulator';
+
+  @override
+  String get developerModeRequirement => 'Developer mode turned off';
+
+  @override
+  String get internalStorageRequirement => 'Installed in internal storage';
+
+  @override
+  String get deviceRemediationTitle => 'Please:';
+
+  @override
+  String get deviceIntegrityRemediation =>
+      'Use another device if rooted, jailbroken, or an emulator';
+
+  @override
+  String get developerModeRemediation => 'Turn off developer mode if it is on';
+
+  @override
+  String get internalStorageRemediation =>
+      'Reinstall in internal storage if installed on SD card';
+
+  @override
+  String get deviceAdministratorHelp => 'Or contact Administrator if needed.';
+
+  @override
+  String get deviceRequirementMet => 'Requirement met';
+
+  @override
+  String get deviceRequirementNotMet => 'Requirement not met';
+
+  @override
+  String get deviceRequirementUnavailable => 'Check result unavailable';
+
+  @override
+  String appCopyright(int year) {
+    return '© $year GASI:One';
+  }
 }

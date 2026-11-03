@@ -112,7 +112,7 @@ The plugin entry point owns its internal dependency graph and exposes only its
 integration surface:
 
 ```dart
-final class SalesPlugin implements AppPlugin {
+final class SalesPlugin implements AppPlugin, PageRouteContributor {
   SalesPlugin({required ApiClient apiClient})
       : _orderRepository = OrderRepositoryImpl(
           OrderRemoteDataSource(apiClient),
@@ -124,8 +124,11 @@ final class SalesPlugin implements AppPlugin {
   String get code => 'sales';
 
   @override
-  List<PluginRoute> get routes => [
-    PluginRoute(
+  List<PluginRoute> get routes => const [];
+
+  @override
+  List<PluginPageRoute> get pageRoutes => [
+    PluginPageRoute(
       path: '/orders',
       builder: (context, state) => BlocProvider(
         create: (_) => OrdersCubit(_orderRepository)..load(),
@@ -136,6 +139,12 @@ final class SalesPlugin implements AppPlugin {
 
   @override
   List<PluginMenuItem> get menus => const [];
+
+  @override
+  List<LocalizationsDelegate<dynamic>> get localizationsDelegates => const [];
+
+  @override
+  List<Locale> get supportedLocales => const [];
 }
 ```
 
@@ -144,19 +153,28 @@ Plugin codes use lowercase stable identifiers such as `auth`, `catalog`, and
 
 ### 5. Register the plugin
 
-Add the package to the root workspace and the mobile app dependencies. Create
-the plugin in `platform-app/lib/app/app_dependencies.dart`, then add it
-to `PluginRegistry`. The router and home menu consume the registry, so plugin
-routes and menus do not need to be copied into the application shell.
+Add the package to the root workspace and the mobile app dependencies. Supply
+fresh instances through `AppDependencies.createPlugins` at the composition root.
+`PluginComposition` gathers Navigator page routes, pickers, localization, menus,
+notification resolvers, and optional lifecycle hooks. Main currently activates
+only the legacy integration; concrete plugin activation belongs to its feature
+change. Legacy Home still owns its existing menu rendering.
 
-Authentication is a special bootstrap plugin: the app composes its login route
-before protected plugin routes because session redirect logic depends on it.
+Navigator plugins implement `PageRouteContributor`. Routes are exact registered
+paths, with query parameters retained in RouteSettings. `PluginRoute` remains
+available for a future GoRouter host; it is not mounted implicitly by Navigator.
+Plugin codes, page paths, picker IDs, menu routes, and delegate types must be
+unique. Duplicate registrations fail during composition.
 
-Plugin codes, picker identifiers, and route patterns must be unique. Route
-parameters with different names still represent the same pattern. Plugin
-activation notifies the router and menu; disabling an open plugin redirects to
-home and closes its contributed pickers. Localization resources stay installed
-for registered plugins so outgoing pages can finish disposal safely.
+Shared request pickers come from `RequestPickerContributor` in core-ui and the
+host's `PickerScope`, rather than a business plugin. A plugin may implement
+`NotificationDestinationResolver` for its validated payload and registered
+feature routes. The host waits for authenticated navigation readiness before
+calling it. Implement `PluginLifecycle` when the plugin owns services that need
+start/disposal. There is no dynamic plugin download or activation protocol.
+
+See [Main readiness foundation](main-readiness-foundation.md) for refresh,
+operation-aware retry, shared picker, notification, and lifecycle integration.
 
 ### 6. Test
 

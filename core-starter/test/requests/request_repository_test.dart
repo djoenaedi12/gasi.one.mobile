@@ -26,6 +26,7 @@ final class _Context implements BusinessContextProvider {
 final class _Api extends ApiClient {
   _Api() : super(enableLogging: false, enableRetry: false);
   Object? data;
+  RequestRetryPolicy? retryPolicy;
   Completer<void>? gate;
   final calls = <({String method, String path, Map<String, Object?> values})>[];
   Future<Map<String, dynamic>> _respond(
@@ -45,7 +46,12 @@ final class _Api extends ApiClient {
     Map<String, Object?>? headers,
     CancelToken? cancelToken,
     bool authenticated = true,
-  }) => _respond('GET', path, queryParameters ?? {});
+    RequestRetryPolicy retryPolicy = RequestRetryPolicy.readOnly,
+  }) {
+    this.retryPolicy = retryPolicy;
+    return _respond('GET', path, queryParameters ?? {});
+  }
+
   @override
   Future<Map<String, dynamic>> postJson(
     String path, {
@@ -163,6 +169,7 @@ void main() {
     );
     expect(api.calls.last.method, 'GET');
     expect(api.calls.last.path.endsWith('/revoked-request'), true);
+    expect(api.retryPolicy, RequestRetryPolicy.never);
   });
   test(
     'old company response is discarded and no-session requests fail closed',

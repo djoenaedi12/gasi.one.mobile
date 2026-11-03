@@ -13,11 +13,14 @@ export 'src/network/api_response.dart';
 export 'src/network/api_response_parser.dart';
 export 'src/network/interceptors/auth_interceptor.dart'
     show SessionExpiredCallback, TokenRefresher;
+export 'src/network/request_retry_policy.dart';
 export 'src/requests/data/api_request_repository.dart';
 export 'src/requests/data/api_request_services.dart';
 export 'src/requests/data/request_api.dart';
 export 'src/result/result_guard.dart';
 export 'src/services/app_runtime_service.dart';
+export 'src/services/device_security_policy.dart';
+export 'src/services/device_security_service.dart';
 export 'src/services/location_service.dart';
 export 'src/services/notification_service.dart';
 export 'src/services/permission_service.dart';

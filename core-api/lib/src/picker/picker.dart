@@ -37,7 +37,7 @@ final class PickerValue {
   int get hashCode => id.hashCode;
 }
 
-/// Values supplied by a consumer when opening a picker page.
+/// Values supplied by a consumer when opening a picker.
 final class PickerRequest<T> {
   const PickerRequest({
     this.title,
@@ -55,23 +55,46 @@ typedef PickerPageBuilder<T> = Widget Function(
   PickerRequest<T> request,
 );
 
+enum PickerPresentation { page, sheet, dialog }
+
 /// Type-erased marker used to collect differently typed picker definitions.
 abstract interface class PickerDefinitionBase {
   String get id;
 }
 
-/// A picker page contributed by a plugin.
+/// A picker contributed by a plugin. Existing registrations open as pages;
+/// sheet/dialog registrations build bounded content without a Scaffold.
 final class PickerDefinition<T> implements PickerDefinitionBase {
-  const PickerDefinition({required this.key, required this.pageBuilder});
+  const PickerDefinition({
+    required this.key,
+    required PickerPageBuilder<T> pageBuilder,
+  }) : builder = pageBuilder,
+       presentation = PickerPresentation.page;
+
+  const PickerDefinition.sheet({
+    required this.key,
+    required PickerPageBuilder<T> contentBuilder,
+  }) : builder = contentBuilder,
+       presentation = PickerPresentation.sheet;
+
+  const PickerDefinition.dialog({
+    required this.key,
+    required PickerPageBuilder<T> contentBuilder,
+  }) : builder = contentBuilder,
+       presentation = PickerPresentation.dialog;
 
   final PickerKey<T> key;
-  final PickerPageBuilder<T> pageBuilder;
+  final PickerPageBuilder<T> builder;
+  final PickerPresentation presentation;
+
+  /// Existing callers may still access the original page builder name.
+  PickerPageBuilder<T> get pageBuilder => builder;
 
   @override
   String get id => key.id;
 }
 
-/// Optional capability implemented by plugins that provide picker pages.
+/// Optional capability implemented by plugins that provide pickers.
 abstract interface class PickerContributor {
   List<PickerDefinitionBase> get pickers;
 }

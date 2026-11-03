@@ -7,6 +7,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_starter/src/utils/notification_utils.dart';
 
+export 'package:gasione_core_api/gasione_core_api.dart'
+    show NotificationInteraction;
+
 enum AppNotificationPermissionStatus {
   authorized,
   denied,
@@ -29,14 +32,6 @@ final class AppNotification {
   final String? body;
   final Map<String, Object?> data;
   final String? payload;
-}
-
-final class NotificationInteraction {
-  NotificationInteraction({this.payload, Map<String, Object?> data = const {}})
-    : data = Map.unmodifiable(data);
-
-  final String? payload;
-  final Map<String, Object?> data;
 }
 
 abstract interface class NotificationService implements PushTokenProvider {
@@ -355,7 +350,11 @@ final class FirebaseNotificationService implements NotificationService {
   }
 
   @override
-  NotificationInteraction? getInitialInteraction() => _initialInteraction;
+  NotificationInteraction? getInitialInteraction() {
+    final interaction = _initialInteraction;
+    _initialInteraction = null;
+    return interaction;
+  }
 
   @override
   Future<void> dispose() async {
@@ -410,6 +409,7 @@ final class FirebaseNotificationService implements NotificationService {
   NotificationInteraction _interactionFromRemoteMessage(RemoteMessage message) {
     final data = Map<String, Object?>.from(message.data);
     return NotificationInteraction(
+      id: _fromRemoteMessage(message).id.toString(),
       payload:
           data['payload']?.toString() ?? NotificationUtils.encodePayload(data),
       data: data,
@@ -419,6 +419,7 @@ final class FirebaseNotificationService implements NotificationService {
   NotificationInteraction _fromLocalResponse(NotificationResponse? response) {
     final payload = response?.payload;
     return NotificationInteraction(
+      id: response?.id?.toString(),
       payload: payload,
       data: NotificationUtils.decodePayload(payload),
     );

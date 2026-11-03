@@ -1,5 +1,6 @@
 import 'package:gasione_core_api/gasione_core_api.dart';
 
+import '../../network/request_retry_policy.dart';
 import 'request_api.dart';
 
 /// Reusable CRUD/workflow adapter; feature payloads and query names stay in the
@@ -74,6 +75,7 @@ final class ApiRequestRepository<T, D> implements RequestRepository<T, D> {
         if (command.action == WorkflowAction.revoke) {
           await api.get(
             '$endpoint/revoked-request',
+            retryPolicy: RequestRetryPolicy.never,
             query: {
               'workflow': command.workflowId,
               'remark': command.remark,

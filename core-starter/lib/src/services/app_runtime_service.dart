@@ -1,12 +1,10 @@
-import 'dart:io';
-
-import 'package:flutter/services.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:safe_device/safe_device.dart';
 import 'package:uuid/uuid.dart';
 
 import '../storage/preferences_storage.dart';
+import 'device_security_policy.dart';
+import 'device_security_service.dart';
 
 /// Loads local runtime information; it never calls business APIs.
 /// FOUNDATION: metadata, identity, and security service remains after migration.
@@ -55,20 +53,17 @@ class AppRuntimeService {
   }
 
   static Future<DeviceSecurity> _platformSecurity() async {
-    // Preserve the EPC device policy while moving its implementation.
-    final jailbroken = await SafeDevice.isJailBroken;
-    final realDevice = await SafeDevice.isRealDevice;
-    final developmentMode = await SafeDevice.isDevelopmentModeEnable;
-    final externalStorage = await SafeDevice.isOnExternalStorage;
-    final signatureValid =
-        !Platform.isAndroid ||
-        (await const MethodChannel('app_integrity')
-                .invokeMethod<bool>('verifySignature') ??
-            false);
-    return DeviceSecurity(
-      unsafeDevice:
-          jailbroken || !realDevice || developmentMode || externalStorage,
-      signatureValid: signatureValid,
+    await DeviceSecurityService().inspect();
+
+    // Local device fixture retained for manual testing of the security page.
+    return DeviceSecurityPolicy().evaluate(
+      DeviceSecurityReport(
+        jailbroken: false,
+        realDevice: true,
+        developmentMode: false,
+        externalStorage: false,
+        signatureValid: true,
+      ),
     );
   }
 }

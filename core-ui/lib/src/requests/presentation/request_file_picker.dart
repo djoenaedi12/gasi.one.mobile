@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:mime/mime.dart';
 
+import '../../design_system/components/buttons/app_button.dart';
 import '../localization/request_localizations.dart';
 
 class RequestFilePicker extends StatefulWidget {
@@ -57,11 +58,10 @@ class _RequestFilePickerState extends State<RequestFilePicker> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_failed) Text(strings.failed),
-            FilledButton(
-              onPressed: _busy ? null : _pick,
-              child: _busy
-                  ? const CircularProgressIndicator()
-                  : Text(strings.chooseFile),
+            AppButton.primary(
+              label: strings.chooseFile,
+              isLoading: _busy,
+              onPressed: _pick,
             ),
           ],
         ),

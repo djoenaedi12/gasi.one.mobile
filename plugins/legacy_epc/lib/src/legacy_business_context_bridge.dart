@@ -45,6 +45,27 @@ final class LegacyBusinessContextBridge {
   final SharedPreferences _preferences;
   final VoidCallback _onChanged;
 
+  /// Reads installed state, restores its user context, and returns the next step.
+  /// The host maps this status to a page; this bridge never navigates.
+  Future<AuthStatus> restore() async {
+    // 1. No saved company: start at company selection.
+    final installed = await restoreInstalledState();
+    _ensureActive();
+    if (!installed.hasCompany) return AuthStatus.companyRequired;
+
+    // 2. Saved company without a user session: start at login.
+    final username = installed.username;
+    if (username == null) return AuthStatus.loginRequired;
+
+    // 3. Restore the user/license/parameters needed by verification and Home.
+    await _restoreUserContext(username);
+
+    // 4. A restored session still requires local verification before Home.
+    return installed.verificationConfigured
+        ? AuthStatus.verificationRequired
+        : AuthStatus.verificationSetupRequired;
+  }
+
   Future<LegacyInstalledBusinessState> restoreInstalledState() async {
     Config.client = null;
     Config.session = null;
@@ -118,14 +139,7 @@ final class LegacyBusinessContextBridge {
     );
   }
 
-  /// TRANSITION[LEGACY-BUSINESS-CONTEXT]: keep restoration in the existing
-  /// runtime until the CR installs the business-context plugin.
-  Future<AuthStatus> restore() async {
-    final installed = await restoreInstalledState();
-    _ensureActive();
-    if (!installed.hasCompany) return AuthStatus.companyRequired;
-    final username = installed.username;
-    if (username == null) return AuthStatus.loginRequired;
+  Future<void> _restoreUserContext(String username) async {
     final session = Config.session;
     final repositories = Repository();
     final user = await repositories.getUserRepository().findByUsername(
@@ -159,9 +173,6 @@ final class LegacyBusinessContextBridge {
     Config.switchAccount = (values[3] as Parameter?)?.value == '1';
     Config.isManager = values[4] as bool;
     _onChanged();
-    return installed.verificationConfigured
-        ? AuthStatus.verificationRequired
-        : AuthStatus.verificationSetupRequired;
   }
 }
 

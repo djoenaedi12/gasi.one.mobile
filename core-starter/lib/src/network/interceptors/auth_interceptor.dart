@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:gasione_core_starter/src/errors/error_reporter.dart';
+import 'package:gasione_core_starter/src/network/api_exception.dart';
 import 'package:gasione_core_starter/src/storage/session_store.dart';
 
 typedef SessionExpiredCallback = FutureOr<void> Function();
@@ -11,12 +12,7 @@ typedef TokenRefresher =
     );
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(
-    this._dio,
-    this._refreshDio,
-    this._sessions, {
-    this.refreshTokens,
-  });
+  AuthInterceptor(this._dio, this._sessions, {this.refreshTokens});
 
   final TokenRefresher? refreshTokens;
 
@@ -25,7 +21,6 @@ class AuthInterceptor extends Interceptor {
   static const _sessionVersionKey = 'sessionVersion';
 
   final Dio _dio;
-  final Dio _refreshDio;
   final SessionStore _sessions;
 
   Future<String?>? _refreshFuture;
@@ -138,43 +133,31 @@ class AuthInterceptor extends Interceptor {
         return null;
       }
 
+      // The host supplies the backend-specific transport. Core never guesses
+      // an endpoint or token format. Without a refresher, 401 requires login.
       final refresher = refreshTokens;
-      if (refresher != null) {
-        final tokens = await refresher(refreshToken);
-        if (tokens.accessToken.isEmpty || tokens.refreshToken.isEmpty) {
-          await _expireSession(version);
-          return null;
-        }
-        final saved = await _sessions.saveTokens(
-          version: version,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        );
-        return saved ? tokens.accessToken : null;
-      }
-      final response = await _refreshDio.post<Map<String, dynamic>>(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken, 'expiresInMins': 30},
-      );
-      final data = response.data;
-      final newAccessToken = data?['accessToken'];
-      final newRefreshToken = data?['refreshToken'];
-      if (newAccessToken is! String ||
-          newAccessToken.isEmpty ||
-          newRefreshToken is! String ||
-          newRefreshToken.isEmpty) {
+      if (refresher == null) {
         await _expireSession(version);
         return null;
       }
-
+      final tokens = await refresher(refreshToken);
+      if (tokens.accessToken.isEmpty || tokens.refreshToken.isEmpty) {
+        await _expireSession(version);
+        return null;
+      }
       final saved = await _sessions.saveTokens(
         version: version,
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       );
-      return saved ? newAccessToken : null;
+      return saved ? tokens.accessToken : null;
     } on DioException catch (error) {
       if (error.response?.statusCode case 400 || 401 || 403) {
+        await _expireSession(version);
+      }
+      return null;
+    } on ApiException catch (error) {
+      if (error.statusCode case 400 || 401 || 403) {
         await _expireSession(version);
       }
       return null;
@@ -193,7 +176,11 @@ class AuthInterceptor extends Interceptor {
       reportUnexpectedError(error, stackTrace);
     }
     if (_sessions.version == version + 1) {
-      await onSessionExpired?.call();
+      try {
+        await onSessionExpired?.call();
+      } catch (error, stackTrace) {
+        reportUnexpectedError(error.runtimeType, stackTrace);
+      }
     }
   }
 }

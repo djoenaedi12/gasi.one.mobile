@@ -11,7 +11,7 @@ termasuk auth, business_context, dan attendance, berada pada branch
 | Platform | Bootstrap, StartupGate, generic entry/route bridge, lifecycle, theme/localization | Wiring dan cutover plugin baru, Splash dan entry flow spesifik |
 | core-api | Auth/context, plugin extension points, request/workflow/picker contracts | Penggunaan kontrak oleh plugin |
 | core-starter | HTTP/session/storage/services dan generic request data adapters | Endpoint/payload/eligibility spesifik feature |
-| core-ui | Design system, picker registry, generic request controller/workspace/modal/form/selection | Composition dan konten UI feature |
+| core-ui | Design system, splash persiapan generik dan brand asset, picker registry, generic request controller/workspace/modal/form/selection | Composition dan konten UI feature |
 | plugins | legacy_epc dengan existing auth/Home/attendance/context restore | auth, business_context, attendance beserta skeleton dan registration |
 
 Request transport ada di `core-starter/lib/src/requests/data`. Request
@@ -31,6 +31,10 @@ Platform mendelegasikan restore user/license/parameter/device/manager kepada
 public legacy boundary. Existing Company/Login/verification dan Home tetap
 berjalan tanpa dependency pada plugin baru. Generic AuthRestorer dan
 BusinessContextProvider tetap tersedia di core-api.
+
+Main menampilkan core-ui/AppSplashPage selama persiapan layanan dan pemulihan
+sesi. Minimum 2 detik dikelola StartupGate, paralel dengan persiapan; tanpa
+ketergantungan pada splash Pre-Home di CR atau timer/navigasi splash legacy.
 
 ## Verification dan lokasi kerja
 

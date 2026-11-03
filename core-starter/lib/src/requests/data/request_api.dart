@@ -3,6 +3,7 @@ import 'package:gasione_core_api/gasione_core_api.dart';
 
 import '../../network/api_client.dart';
 import '../../network/api_exception.dart';
+import '../../network/request_retry_policy.dart';
 import '../../result/result_guard.dart';
 
 /// Shared transport for the installed API. Features supply endpoint and mapping.
@@ -16,12 +17,19 @@ final class RequestApi {
   final BusinessContextProvider context;
   final Map<String, Object?> Function() headers;
 
-  Future<Object?> get(String path, {Map<String, Object?> query = const {}}) =>
-      _call(
-        (url, values) =>
-            client.getJson(url, queryParameters: query, headers: values),
-        path,
-      );
+  Future<Object?> get(
+    String path, {
+    Map<String, Object?> query = const {},
+    RequestRetryPolicy retryPolicy = RequestRetryPolicy.readOnly,
+  }) => _call(
+    (url, values) => client.getJson(
+      url,
+      queryParameters: query,
+      headers: values,
+      retryPolicy: retryPolicy,
+    ),
+    path,
+  );
   Future<Object?> post(String path, Map<String, Object?> data) => _call(
     (url, values) => client.postJson(url, data: data, headers: values),
     path,

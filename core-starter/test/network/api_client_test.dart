@@ -60,6 +60,7 @@ void main() {
     });
 
     final refreshDio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    addTearDown(() => refreshDio.close(force: true));
     refreshDio.httpClientAdapter = _CallbackAdapter((options) async {
       refreshCalls++;
       await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -71,7 +72,7 @@ void main() {
 
     final client = ApiClient(
       dio: requestDio,
-      refreshDio: refreshDio,
+      refreshTokens: _refresher(refreshDio),
       tokenStorage: tokenStorage,
       enableRetry: false,
       enableLogging: false,
@@ -221,12 +222,13 @@ void main() {
       return _jsonResponse({'message': 'Token expired'}, 401);
     });
     final refreshDio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    addTearDown(() => refreshDio.close(force: true));
     refreshDio.httpClientAdapter = _CallbackAdapter((options) async {
       return _jsonResponse({'message': 'Refresh token expired'}, 401);
     });
     final client = ApiClient(
       dio: requestDio,
-      refreshDio: refreshDio,
+      refreshTokens: _refresher(refreshDio),
       tokenStorage: tokenStorage,
       enableRetry: false,
       enableLogging: false,
@@ -260,13 +262,14 @@ void main() {
       return _jsonResponse({'message': 'expired'}, 401);
     });
     final refresh = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    addTearDown(() => refresh.close(force: true));
     refresh.httpClientAdapter = _CallbackAdapter((_) {
       started.complete();
       return response.future;
     });
     final client = ApiClient(
       dio: dio,
-      refreshDio: refresh,
+      refreshTokens: _refresher(refresh),
       tokenStorage: storage,
       enableRetry: false,
       enableLogging: false,
@@ -295,13 +298,14 @@ void main() {
       (_) async => _jsonResponse({'message': 'expired'}, 401),
     );
     final refresh = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    addTearDown(() => refresh.close(force: true));
     refresh.httpClientAdapter = _CallbackAdapter((_) {
       started.complete();
       return response.future;
     });
     final client = ApiClient(
       dio: dio,
-      refreshDio: refresh,
+      refreshTokens: _refresher(refresh),
       tokenStorage: storage,
       enableRetry: false,
       enableLogging: false,
@@ -322,6 +326,122 @@ void main() {
     expect(expired, isFalse);
     expect(storage.accessToken, 'new-login');
   });
+
+  test(
+    '401 without a refresh strategy never guesses a backend endpoint',
+    () async {
+      final tokens = MemoryTokenStorage()
+        ..accessToken = 'old'
+        ..refreshToken = 'old';
+      final paths = <String>[];
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      dio.httpClientAdapter = _CallbackAdapter((request) async {
+        paths.add(request.path);
+        return _jsonResponse({'message': 'expired'}, 401);
+      });
+      final client = ApiClient(dio: dio, tokenStorage: tokens);
+      addTearDown(client.close);
+      var expirations = 0;
+      client.setSessionExpiredHandler(() => expirations++);
+      await expectLater(
+        client.getJson('/protected'),
+        throwsA(isA<ApiException>()),
+      );
+      expect(paths, ['/protected']);
+      expect(expirations, 1);
+      expect(tokens.accessToken, isNull);
+    },
+  );
+
+  test(
+    'transient configured refresh failure preserves the active session',
+    () async {
+      final tokens = MemoryTokenStorage()
+        ..accessToken = 'old'
+        ..refreshToken = 'old';
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      dio.httpClientAdapter = _CallbackAdapter(
+        (_) async => _jsonResponse({}, 401),
+      );
+      final client = ApiClient(
+        dio: dio,
+        tokenStorage: tokens,
+        refreshTokens: (_) async =>
+            throw const ApiException(ApiExceptionType.timeout),
+      );
+      addTearDown(client.close);
+      var expired = false;
+      client.setSessionExpiredHandler(() => expired = true);
+      await expectLater(
+        client.getJson('/protected'),
+        throwsA(isA<ApiException>()),
+      );
+      expect(expired, false);
+      expect(tokens.accessToken, 'old');
+    },
+  );
+
+  for (final status in [400, 401, 403]) {
+    test('configured refresh rejection $status expires exactly once', () async {
+      final tokens = MemoryTokenStorage()
+        ..accessToken = 'old'
+        ..refreshToken = 'old';
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      dio.httpClientAdapter = _CallbackAdapter(
+        (_) async => _jsonResponse({}, 401),
+      );
+      final started = Completer<void>();
+      final refresh = Completer<({String accessToken, String refreshToken})>();
+      final client = ApiClient(
+        dio: dio,
+        tokenStorage: tokens,
+        refreshTokens: (_) {
+          if (!started.isCompleted) started.complete();
+          return refresh.future;
+        },
+      );
+      addTearDown(client.close);
+      var expirations = 0;
+      client.setSessionExpiredHandler(() => expirations++);
+      final pending = Future.wait([
+        guardResult(() => client.getJson('/one')),
+        guardResult(() => client.getJson('/two')),
+      ]);
+      await started.future;
+      // Let both unauthorized requests join the shared refresh.
+      await Future<void>.delayed(Duration.zero);
+      refresh.completeError(
+        ApiException(ApiExceptionType.badResponse, statusCode: status),
+      );
+      await pending;
+      expect(expirations, 1);
+      expect(tokens.accessToken, isNull);
+    });
+  }
+
+  for (final failureType in [
+    DioExceptionType.receiveTimeout,
+    DioExceptionType.badResponse,
+  ]) {
+    test('effectful GET is sent once after $failureType', () async {
+      var calls = 0;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      dio.httpClientAdapter = _CallbackAdapter((request) async {
+        calls++;
+        if (failureType == DioExceptionType.receiveTimeout) {
+          throw DioException(requestOptions: request, type: failureType);
+        }
+        return _jsonResponse({}, 503);
+      });
+      final client = ApiClient(dio: dio, tokenStorage: MemoryTokenStorage());
+      addTearDown(client.close);
+      await expectLater(
+        client.getJson('/effect', retryPolicy: RequestRetryPolicy.never),
+        throwsA(isA<ApiException>()),
+      );
+      expect(calls, 1);
+    });
+  }
 
   test(
     'storage read failure rejects the request instead of leaving it pending',
@@ -374,3 +494,14 @@ class _FailingStorage extends MemoryTokenStorage {
   Future<String?> readAccessToken() async =>
       throw StateError('Storage unavailable');
 }
+
+TokenRefresher _refresher(Dio transport) => (token) async {
+  final response = await transport.post<Map<String, dynamic>>(
+    '/configured-refresh',
+    data: {'refreshToken': token},
+  );
+  return (
+    accessToken: response.data!['accessToken'] as String,
+    refreshToken: response.data!['refreshToken'] as String,
+  );
+};

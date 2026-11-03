@@ -13,6 +13,14 @@ final class PluginRouteBridge {
   }
   final Map<String, PluginPageRoute> _routes = {};
   final Route<dynamic>? Function(RouteSettings)? fallback;
+  bool containsPath(String name) {
+    final uri = Uri.tryParse(name);
+    return uri != null &&
+        !uri.hasScheme &&
+        !uri.hasAuthority &&
+        _routes.containsKey(uri.path);
+  }
+
   Route<dynamic>? call(RouteSettings settings) {
     final name = settings.name;
     final route = name == null ? null : _routes[Uri.parse(name).path];

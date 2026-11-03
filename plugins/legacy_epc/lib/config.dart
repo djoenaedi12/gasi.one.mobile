@@ -15,6 +15,9 @@ import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class Config {
+  // TRANSITION[LEGACY-NAVIGATION]: emitted by Home after local verification.
+  // Remove when the host receives readiness directly from the auth capability.
+  static VoidCallback? onAuthenticatedAreaReady;
   static String baseUrl = "https://YmFzZS1hcGkucGVvcGxlY2FyZS5pZC9ld2YtYmFzZQ==";
   static String baseClientId = "RVdGLU1vYmlsZQ==";
   static String baseClientSecret = "Y2FiN2M2OTlhNDM1NGJkYzQyOWRiNDc1";

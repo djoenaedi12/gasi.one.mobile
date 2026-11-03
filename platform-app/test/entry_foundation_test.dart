@@ -34,12 +34,18 @@ void main() {
       );
       await tester.pumpWidget(app());
       await tester.pump();
+      expect(find.byType(AppSplashPage), findsOneWidget);
+      final splash = tester.element(find.byType(AppSplashPage));
+      expect(find.byType(Image), findsOneWidget);
       expect(find.textContaining('private'), findsNothing);
       expect(find.text('Retry'), findsOneWidget);
       auth.attempt = () => pending.future;
       await tester.tap(find.text('Retry'));
       await tester.pumpWidget(app());
       expect(auth.calls, 2);
+      expect(find.byType(AppSplashPage), findsOneWidget);
+      expect(tester.element(find.byType(AppSplashPage)), same(splash));
+      expect(find.text('Retry'), findsNothing);
       pending.complete(AuthStatus.loginRequired);
       await tester.pump();
       expect(find.text('loginRequired'), findsOneWidget);

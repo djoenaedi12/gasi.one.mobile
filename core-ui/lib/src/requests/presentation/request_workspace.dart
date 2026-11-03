@@ -3,8 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 
+import '../../design_system/components/buttons/app_button.dart';
+import '../../design_system/components/feedback/app_snackbar.dart';
+import '../../design_system/foundations/app_spacing.dart';
 import '../../design_system/patterns/app_empty_view.dart';
 import '../../design_system/patterns/app_error_view.dart';
+import '../../localization/failure_localization.dart';
+import '../../localization/l10n/app_localizations.dart';
 import '../application/request_list_controller.dart';
 import '../application/request_selection_controller.dart';
 import '../localization/request_localizations.dart';
@@ -160,13 +165,17 @@ class _RequestWorkspaceState<T> extends State<RequestWorkspace<T>>
     if (!mounted || remark == null) return;
     final result = await selection.run(action, remark: remark);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          strings.bulkResult(result.succeeded.length, result.failures.length),
-        ),
-      ),
+    final message = strings.bulkResult(
+      result.succeeded.length,
+      result.failures.length,
     );
+    if (result.failures.isEmpty) {
+      AppSnackbar.success(context, message);
+    } else if (result.succeeded.isEmpty) {
+      AppSnackbar.error(context, message);
+    } else {
+      AppSnackbar.warning(context, message);
+    }
     if (result.succeeded.isNotEmpty) await widget.approval.refresh();
   }
 
@@ -212,11 +221,11 @@ class _RequestWorkspaceState<T> extends State<RequestWorkspace<T>>
               : null,
           actions: selecting
               ? [
-                  TextButton(
+                  AppButton.ghost(
+                    label: strings.selectAll,
                     onPressed: busy
                         ? null
                         : () => selection!.selectAll(widget.approval.items),
-                    child: Text(strings.selectAll),
                   ),
                 ]
               : widget.actionsBuilder?.call(context, _mode),
@@ -237,7 +246,7 @@ class _RequestWorkspaceState<T> extends State<RequestWorkspace<T>>
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               child: Row(
                 children: [
                   Expanded(
@@ -281,19 +290,19 @@ class _RequestWorkspaceState<T> extends State<RequestWorkspace<T>>
               SafeArea(
                 top: false,
                 child: Wrap(
-                  spacing: 12,
+                  spacing: AppSpacing.sm,
                   children: [
-                    TextButton(
+                    AppButton.ghost(
+                      label: strings.reject,
                       onPressed: busy || selection!.selectedIds.isEmpty
                           ? null
                           : () => _bulk(WorkflowAction.reject),
-                      child: Text(strings.reject),
                     ),
-                    FilledButton(
+                    AppButton.primary(
+                      label: strings.approve,
                       onPressed: busy || selection!.selectedIds.isEmpty
                           ? null
                           : () => _bulk(WorkflowAction.approve),
-                      child: Text(strings.approve),
                     ),
                   ],
                 ),
@@ -313,21 +322,29 @@ class _RequestWorkspaceState<T> extends State<RequestWorkspace<T>>
         selection?.done();
         await controller.refresh();
       },
-      child: ListView(
+      child: ListView.builder(
         key: PageStorageKey(mode),
         physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          if (controller.loading && controller.items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          if (!controller.loading &&
-              controller.failure == null &&
-              controller.items.isEmpty)
-            AppEmptyView(title: strings.empty, message: ''),
-          for (final item in controller.items)
-            InkWell(
+        itemCount: controller.items.length + 2,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Column(
+              children: [
+                if (controller.loading && controller.items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(AppSpacing.lg),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                if (!controller.loading &&
+                    controller.failure == null &&
+                    controller.items.isEmpty)
+                  AppEmptyView(title: strings.empty, message: ''),
+              ],
+            );
+          }
+          if (index <= controller.items.length) {
+            final item = controller.items[index - 1];
+            return InkWell(
               onLongPress: selection == null || selection.busy
                   ? null
                   : () => selection.toggle(item),
@@ -346,25 +363,31 @@ class _RequestWorkspaceState<T> extends State<RequestWorkspace<T>>
                   Expanded(child: widget.cardBuilder(context, item, mode)),
                 ],
               ),
-            ),
-          if (controller.failure != null)
-            AppErrorView(
-              message: strings.failed,
-              actionLabel: strings.retry,
-              onAction: () => controller.items.isEmpty
-                  ? controller.refresh()
-                  : controller.nextPage(),
-            ),
-          if (controller.items.isNotEmpty &&
-              controller.hasNext &&
-              controller.failure == null)
-            TextButton(
-              onPressed: controller.loading ? null : controller.nextPage,
-              child: controller.loading
-                  ? const CircularProgressIndicator()
-                  : Text(strings.loadMore),
-            ),
-        ],
+            );
+          }
+          return Column(
+            children: [
+              if (controller.failure != null)
+                AppErrorView(
+                  message: controller.failure!.localizedMessage(
+                    AppLocalizations.of(context),
+                  ),
+                  actionLabel: strings.retry,
+                  onAction: () => controller.items.isEmpty
+                      ? controller.refresh()
+                      : controller.nextPage(),
+                ),
+              if (controller.items.isNotEmpty &&
+                  controller.hasNext &&
+                  controller.failure == null)
+                AppButton.ghost(
+                  label: strings.loadMore,
+                  isLoading: controller.loading,
+                  onPressed: controller.loading ? null : controller.nextPage,
+                ),
+            ],
+          );
+        },
       ),
     );
   }

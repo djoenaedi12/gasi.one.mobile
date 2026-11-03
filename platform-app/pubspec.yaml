@@ -27,9 +27,7 @@ dependencies:
   # TRANSITION[LEGACY-UI]: preserve APIs used by legacy pages. Remove/replace
   # each package only after its host AND feature callers have been migrated.
   # If adopted by new features, explicitly reclassify it as FOUNDATION.
-  adaptive_theme: 3.7.0
   easy_localization: ^3.0.2
-  flutter_easyloading: ^3.0.5
   flutter_phoenix: ^1.1.1
 
 dev_dependencies:

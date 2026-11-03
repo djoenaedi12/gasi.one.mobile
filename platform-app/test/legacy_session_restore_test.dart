@@ -3,6 +3,11 @@ import 'dart:convert';
 
 import 'package:epeoplecare/config.dart';
 import 'package:epeoplecare/legacy_epc.dart';
+import 'package:epeoplecare/view/auth/client_page.dart';
+import 'package:epeoplecare/view/auth/login_page.dart';
+import 'package:epeoplecare/view/home_page.dart';
+import 'package:epeoplecare/view/verification/verification_page.dart';
+import 'package:epeoplecare/view/verification/verification_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
@@ -87,12 +92,63 @@ Future<http.Response> _response(http.Request request) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'no saved company opens company selection without tenant API calls',
+    () async {
+      final module = await _module();
+      addTearDown(module.dispose);
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.clear();
+      await http.runWithClient(
+        () async {
+          final status = await module.restore();
+          expect(status, AuthStatus.companyRequired);
+          expect(module.buildEntryPage(status), isA<ClientPage>());
+        },
+        () => MockClient((_) => throw StateError('Unexpected tenant API call')),
+      );
+    },
+  );
+
+  test(
+    'saved company without login opens login without user API calls',
+    () async {
+      final module = await _module();
+      addTearDown(module.dispose);
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString('isLogin', '0');
+      await http.runWithClient(() async {
+        final status = await module.restore();
+        expect(status, AuthStatus.loginRequired);
+        expect(module.buildEntryPage(status), isA<LoginPage>());
+        expect(Config.user, isNull);
+      }, () => MockClient((_) => throw StateError('Unexpected user API call')));
+    },
+  );
+
+  test(
+    'restored session without verification setup opens setup before Home',
+    () async {
+      final module = await _module();
+      addTearDown(module.dispose);
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.remove('verificationType');
+      await http.runWithClient(() async {
+        final status = await module.restore();
+        expect(status, AuthStatus.verificationSetupRequired);
+        expect(module.buildEntryPage(status), isA<VerificationSetupPage>());
+      }, () => MockClient(_response));
+    },
+  );
+
   test('restores existing context and requires local verification without new plugins', () async {
     final module = await _module();
     addTearDown(module.dispose);
     await http.runWithClient(() async {
       final status = await module.restore();
       expect(status, AuthStatus.verificationRequired);
+      expect(module.buildEntryPage(status), isA<VerificationPage>());
+      expect(module.buildEntryPage(AuthStatus.authenticated), isA<HomePage>());
       expect(Config.user?.username, 'employee');
       expect(Config.serverTimezone, '+08:00');
       expect(Config.showDisabledMenu, false);

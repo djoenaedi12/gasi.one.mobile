@@ -4,7 +4,28 @@ Main berisi core-api, core-starter, core-ui, platform-app, dan plugins/legacy_ep
 Paket auth/business_context/attendance beserta wiring-nya berada di CR.
 
 Platform memiliki bootstrap, StartupGate, shared services, MaterialApp,
-navigator/theme/localization, dan generic AppEntryPage/PluginRouteBridge.
+navigator/theme/localization, DeviceAccessGate, dan generic AppEntryPage/PluginRouteBridge.
+Platform bertindak sebagai host: merakit dependency, mengatur urutan startup,
+menangani lifecycle, dan menghubungkan route/callback. Detail tampilan persiapan
+ada di core-ui/AppSplashPage, termasuk pesan error dan retry saat gagal. StartupGate
+menunggu persiapan dan minimum splash 2 detik secara bersamaan. AppEntryPage
+melanjutkan splash selama pemulihan sesi tanpa timer tambahan. Kedua gate
+meneruskan callback retry jika gagal. Halaman dan aturan bisnis
+tetap dimiliki plugin, implementasi layanan bersama dimiliki core-starter.
+Semua definisi tema berada di core-ui/AppTheme. Platform memasang
+AppTheme.light() secara langsung; tema perusahaan tidak menjadi sumber tema global.
+Alur lengkap hingga halaman pertama: [Startup flow](startup-flow.md).
+DeviceSecurityService membaca fakta native; DeviceSecurityPolicy mengevaluasi
+aturan yang sudah berlaku. Halaman penolakan dan design tokens dimiliki core-ui. Platform hanya
+menghubungkan hasil security, tema/lokalisasi, dan callback Exit.
+Penolakan akses terjadi di platform sebelum shell
+legacy dibuat, bukan melalui dialog di setiap halaman.
+AppLoading di core-ui menyediakan overlay bersama berbasis flutter_easyloading.
+Platform memasang builder-nya dan fitur baru mengakses bridge core-ui.
+Legacy masih menggunakan API EasyLoading existing pada overlay yang sama.
+AppSnackbar dan pemetaan Failure ke pesan terlokalisasi dimiliki core-ui;
+UI fitur memakai feedback bersama, sedangkan navigasi sesi habis tetap
+dihubungkan oleh platform. Lihat [design system](design-system.md).
 Firebase/native service diinisialisasi satu kali dan didispose oleh platform;
 soft restart mempertahankan service yang sama.
 

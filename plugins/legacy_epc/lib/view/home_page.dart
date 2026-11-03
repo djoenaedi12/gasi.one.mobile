@@ -57,6 +57,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // TRANSITION[LEGACY-NAVIGATION]: explicit post-verification readiness.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Config.onAuthenticatedAreaReady?.call();
+    });
 
     _getLastAttendance();
     _getAnnouncement();
@@ -64,8 +68,6 @@ class _HomePageState extends State<HomePage> {
     _checkHasNotificationUnread();
     _initMenuModule();
     AlertProvider.showUpdateAvailableDialog();
-    AlertProvider.showUnSafeDeviceDialog();
-    AlertProvider.showSignatureDialog();
     _getSystemAnnouncement();
   }
 

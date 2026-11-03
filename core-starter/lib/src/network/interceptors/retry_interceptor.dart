@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
 
+import '../request_retry_policy.dart';
+
 class RetryInterceptor extends Interceptor {
   RetryInterceptor(this._dio, {this.maxRetries = 2});
 
+  static const policyKey = 'requestRetryPolicy';
   static const _retryCountKey = 'retryCount';
 
   final Dio _dio;
@@ -20,6 +23,10 @@ class RetryInterceptor extends Interceptor {
     request.extra[_retryCountKey] = retryCount + 1;
     await Future<void>.delayed(Duration(milliseconds: 250 * (1 << retryCount)));
 
+    if (request.cancelToken?.isCancelled == true) {
+      handler.next(err);
+      return;
+    }
     try {
       handler.resolve(await _dio.fetch<dynamic>(request));
     } on DioException catch (retryError) {
@@ -28,7 +35,9 @@ class RetryInterceptor extends Interceptor {
   }
 
   bool _canRetry(DioException error, int retryCount) {
-    if (retryCount >= maxRetries) {
+    if (error.requestOptions.extra[policyKey] != RequestRetryPolicy.readOnly ||
+        error.requestOptions.cancelToken?.isCancelled == true ||
+        retryCount >= maxRetries) {
       return false;
     }
 

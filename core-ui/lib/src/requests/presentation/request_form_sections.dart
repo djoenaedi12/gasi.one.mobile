@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 
+import '../../design_system/foundations/app_spacing.dart';
 import '../localization/request_localizations.dart';
 
 /// Custom fields keep their installed string wire values. The feature owns the
@@ -54,7 +55,7 @@ class RequestCustomFieldsSection extends StatelessWidget {
     children: [
       for (final field in fields)
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: _field(context, field),
         ),
     ],

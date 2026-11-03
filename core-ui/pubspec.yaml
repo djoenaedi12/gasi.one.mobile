@@ -18,6 +18,8 @@ dependencies:
   file_picker: ^13.1.0
   mime: ^2.0.0
   skeletonizer: ^3.0.0
+  # Shared blocking overlay; consumers use AppLoading from this package.
+  flutter_easyloading: ^3.0.5
 
 dev_dependencies:
   flutter_test:
@@ -26,3 +28,5 @@ dev_dependencies:
 
 flutter:
   generate: true
+  assets:
+    - assets/branding/logo.png

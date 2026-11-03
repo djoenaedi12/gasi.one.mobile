@@ -65,6 +65,33 @@ void main() {
       isNotNull,
     );
   });
+  test('loading vendor access is confined to the core-ui bridge', () {
+    for (final package in [
+      'gasione',
+      'gasione_plugin_auth',
+      'gasione_core_starter',
+      'gasione_core_ui',
+    ]) {
+      expect(
+        check(package, 'flutter_easyloading', layer: 'presentation'),
+        contains('Use AppLoading from core-ui'),
+      );
+    }
+    expect(
+      check('epeoplecare', 'flutter_easyloading', layer: 'presentation'),
+      isNull,
+    );
+    expect(
+      dependencyViolation(
+        sourcePath:
+            'lib/src/design_system/components/feedback/app_loading.dart',
+        sourcePackage: 'gasione_core_ui',
+        targetPackage: 'flutter_easyloading',
+        targetPath: 'lib/flutter_easyloading.dart',
+      ),
+      isNull,
+    );
+  });
   test('core and plugins cannot depend on app or other business plugins', () {
     expect(
       check('gasione_core_ui', 'gasione_plugin_auth', layer: 'widgets'),

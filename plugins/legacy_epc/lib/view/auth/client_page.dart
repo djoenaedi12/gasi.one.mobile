@@ -48,8 +48,6 @@ class _ClientPageState extends State<ClientPage> {
     // _authRepository.setBaseUrl("http://10.10.11.64:38000/ewf-base");
     // _clientRepository.setBaseUrl("http://10.10.11.64:38000/ewf-base");
     AlertProvider.showUpdateAvailableDialog();
-    AlertProvider.showUnSafeDeviceDialog();
-    AlertProvider.showSignatureDialog();
   }
 
   void _validateCLient() {

@@ -2,20 +2,19 @@ import 'dart:async';
 
 // TRANSITION[LEGACY-UI]: preserve legacy page APIs until all callers migrate.
 // See docs/migration-cleanup.md before removing these imports/wrappers.
-import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:easy_localization/easy_localization.dart';
 // TRANSITION[LEGACY-EPC]: sole host import of the temporary EPC integration.
 import 'package:epeoplecare/legacy_epc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:gasione_core_starter/gasione_core_starter.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 
 import 'app_dependencies.dart';
 import 'app_entry_page.dart';
-import 'app_theme.dart';
-import 'plugin_route_bridge.dart';
+import 'device_access_gate.dart';
+import 'notification_navigation_coordinator.dart';
+import 'plugin_composition.dart';
 
 /// The host owns the application shell; features provide pages and routes.
 class GasioneApp extends StatefulWidget {
@@ -29,18 +28,6 @@ class GasioneApp extends StatefulWidget {
 
 class _GasioneAppState extends State<GasioneApp> {
   @override
-  void initState() {
-    super.initState();
-    // TRANSITION[LEGACY-UI]: remove when legacy EasyLoading callers are replaced.
-    EasyLoading.instance
-      ..indicatorType = EasyLoadingIndicatorType.fadingCircle
-      ..loadingStyle = EasyLoadingStyle.light
-      ..maskType = EasyLoadingMaskType.black
-      ..userInteractions = false
-      ..dismissOnTap = false;
-  }
-
-  @override
   void dispose() {
     unawaited(widget.dependencies.dispose());
     super.dispose();
@@ -49,12 +36,16 @@ class _GasioneAppState extends State<GasioneApp> {
   @override
   // TRANSITION[LEGACY-UI]: replace localization/restart wrappers after their
   // consumers migrate; GasioneApp and shared-service disposal remain permanent.
-  Widget build(BuildContext context) => EasyLocalization(
-    supportedLocales: const [Locale('en'), Locale('id')],
-    path: 'assets/i18n',
-    startLocale: widget.dependencies.initialLocale,
-    fallbackLocale: const Locale('en'),
-    child: Phoenix(child: _AppShell(dependencies: widget.dependencies)),
+  Widget build(BuildContext context) => DeviceAccessGate(
+    security: widget.dependencies.runtime.security,
+    locale: widget.dependencies.initialLocale,
+    child: EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('id')],
+      path: 'assets/i18n',
+      startLocale: widget.dependencies.initialLocale,
+      fallbackLocale: const Locale('en'),
+      child: Phoenix(child: _AppShell(dependencies: widget.dependencies)),
+    ),
   );
 }
 
@@ -71,13 +62,20 @@ class _AppShellState extends State<_AppShell> {
   // retire together once the new plugins own these responsibilities.
   LegacyEpcModule? _legacy;
   late final ApiClient _api;
-  late final AuthRestorer _restorer;
-  late final PluginRouteBridge _routes;
+  late final PluginComposition _composition;
+  late final NotificationNavigationCoordinator _notificationNavigation;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_legacy != null) return;
+    _connectLegacyFeatures();
+    _configureSessionExpiry();
+    _startBackgroundServicesAfterFirstFrame();
+  }
+
+  // This is the only composition boundary that knows the legacy implementation.
+  void _connectLegacyFeatures() {
     final dependencies = widget.dependencies;
     _legacy = LegacyEpcModule(
       preferences: dependencies.preferences,
@@ -89,34 +87,79 @@ class _AppShellState extends State<_AppShell> {
       directoryUrl: legacyDirectoryUrl,
       directoryToken: legacyDirectoryToken,
       onError: _reportIssue,
-    )..addListener(_refreshTheme);
+      onAuthenticatedAreaReady: _authenticatedAreaReady,
+    )..addListener(_refreshSessionContext);
     final legacy = _legacy!;
     _api = ApiClient(
       tokenStorage: InstalledTokenStorage(dependencies.preferences),
       refreshTokens: refreshLegacyTokens,
       enableLogging: false,
     );
-    _restorer = _CallbackRestorer(legacy.restore);
-    _routes = PluginRouteBridge(
-      legacy.authPageRoutes,
+    final requestApi = RequestApi(
+      client: _api,
+      context: legacy,
+      headers: dependencies.requestHeaders,
+    );
+    _composition = PluginComposition(
+      plugins: dependencies.createPlugins?.call() ?? const [],
+      pageRoutes: legacy.authPageRoutes,
+      pickers: RequestPickerContributor(
+        ApiRequestReferenceRepository(requestApi),
+      ).pickers,
       fallback: buildLegacyRoute,
     );
+    _notificationNavigation = NotificationNavigationCoordinator(
+      context: legacy,
+      interactions: dependencies.notifications.interactions,
+      initialInteraction: dependencies.notifications.getInitialInteraction,
+      resolvers: _composition.notificationResolvers,
+      isRegisteredRoute: _composition.routes.containsPath,
+      navigate: (destination) {
+        unawaited(
+          dependencies.navigatorKey.currentState?.pushNamed<void>(
+            destination.route,
+            arguments: destination.arguments,
+          ),
+        );
+      },
+      schedule: (callback) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) callback();
+        });
+        WidgetsBinding.instance.ensureVisualUpdate();
+      },
+      onError: _reportIssue,
+    );
+  }
+
+  void _configureSessionExpiry() {
     _api.setSessionExpiredHandler(() async {
-      legacy.clearSessionContext();
+      _notificationNavigation.setReady(false);
+      _legacy!.clearSessionContext();
       if (mounted) {
         unawaited(
-          dependencies.navigatorKey.currentState?.pushNamedAndRemoveUntil<void>(
-            '/auth/login',
-            (_) => false,
-          ),
+          widget.dependencies.navigatorKey.currentState
+              ?.pushNamedAndRemoveUntil<void>('/auth/login', (_) => false),
         );
       }
     });
+  }
+
+  // Update checks, token refresh and notification permission do not choose
+  // the first page. AppEntryPage alone restores the session and chooses it.
+  void _startBackgroundServicesAfterFirstFrame() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _legacy!.start();
+      _notificationNavigation.start();
       unawaited(
-        dependencies.requestNotificationPermission().catchError(
+        _composition.start().catchError(
+          (Object error, StackTrace stack) =>
+              _reportIssue('plugin_start', error, stack),
+        ),
+      );
+      unawaited(
+        widget.dependencies.requestNotificationPermission().catchError(
           (Object error, StackTrace stack) =>
               _reportIssue('notification_permission', error, stack),
         ),
@@ -126,12 +169,33 @@ class _AppShellState extends State<_AppShell> {
 
   String? _sessionId;
   bool _refreshQueued = false;
-  void _refreshTheme() {
+  void _refreshSessionContext() {
     if (!mounted) return;
     final current = _legacy!.activeContext?.sessionId;
     if (current != _sessionId) {
       _sessionId = current;
-      _api.sessionStore.beginSession();
+      _notificationNavigation.setReady(false);
+      final version = _api.sessionStore.beginSession();
+      // TRANSITION[LEGACY-SESSION]: legacy persists credentials before publishing
+      // its context. Adopt that snapshot through the shared serialized owner.
+      final preferences = widget.dependencies.preferences;
+      final access = preferences.getString('access_token');
+      final refresh = preferences.getString('refresh_token');
+      if (current != null && access != null && refresh != null) {
+        unawaited(
+          _api.sessionStore
+              .saveTokens(
+                version: version,
+                accessToken: access,
+                refreshToken: refresh,
+              )
+              .then<void>((_) {})
+              .catchError(
+                (Object error, StackTrace stack) =>
+                    _reportIssue('session_sync', error, stack),
+              ),
+        );
+      }
     }
     _legacy!.refreshContext();
     if (_refreshQueued) return;
@@ -143,51 +207,65 @@ class _AppShellState extends State<_AppShell> {
     WidgetsBinding.instance.ensureVisualUpdate();
   }
 
+  void _authenticatedAreaReady() {
+    if (!mounted) return;
+    _refreshSessionContext();
+    _notificationNavigation.setReady(true);
+  }
+
   @override
   void dispose() {
-    _api.close();
-    _legacy?.removeListener(_refreshTheme);
+    unawaited(_notificationNavigation.dispose());
+    unawaited(
+      _composition
+          .dispose()
+          .whenComplete(_api.close)
+          .catchError(
+            (Object error, StackTrace stack) =>
+                _reportIssue('plugin_dispose', error, stack),
+          ),
+    );
+    _legacy?.removeListener(_refreshSessionContext);
     _legacy?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // TRANSITION[LEGACY-EPC]: replace module-supplied theme inputs/home/routes.
+    // TRANSITION[LEGACY-EPC]: replace module-supplied home/routes.
     // Keep the platform MaterialApp, navigator, localization, and service owner.
     final legacy = _legacy!;
-    // TRANSITION[LEGACY-UI]: replace this wrapper when theme consumers migrate.
-    return AdaptiveTheme(
-      light: buildAppTheme(
-        primaryColor: legacy.primaryColor,
-        accentColor: legacy.accentColor,
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      navigatorKey: widget.dependencies.navigatorKey,
+      localizationsDelegates: [
+        ...context.localizationDelegates,
+        ..._composition.localizationsDelegates,
+        RequestLocalizations.delegate,
+        AppLocalizations.delegate,
+      ],
+      supportedLocales: {
+        ...context.supportedLocales,
+        ..._composition.supportedLocales,
+      },
+      locale: context.locale,
+      theme: AppTheme.light(),
+      home: AppEntryPage(
+        auth: legacy,
+        appVersion: widget.dependencies.runtime.info.version,
+        buildDestination: (_, status) => legacy.buildEntryPage(status),
+        onError: _reportIssue,
       ),
-      initial: widget.dependencies.savedThemeMode ?? AdaptiveThemeMode.light,
-      builder: (theme, darkTheme) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        navigatorKey: widget.dependencies.navigatorKey,
-        localizationsDelegates: [
-          ...context.localizationDelegates,
-          AppLocalizations.delegate,
-        ],
-        supportedLocales: context.supportedLocales,
-        locale: context.locale,
-        theme: theme,
-        darkTheme: darkTheme,
-        home: AppEntryPage(
-          auth: _restorer,
-          buildDestination: (_, status) => legacy.buildBusinessPage(status),
-          onError: _reportIssue,
+      builder: (context, child) => SafeArea(
+        bottom: true,
+        top: false,
+        child: PickerScope(
+          launcher: _composition.pickers,
+          child: AppLoading.init()(context, child),
         ),
-        builder: (context, child) => SafeArea(
-          bottom: true,
-          top: false,
-          // TRANSITION[LEGACY-UI]: host overlay for remaining EasyLoading calls.
-          child: EasyLoading.init()(context, child),
-        ),
-        onGenerateRoute: _routes.call,
-        navigatorObservers: [_ContextObserver(_refreshTheme)],
       ),
+      onGenerateRoute: _composition.routes.call,
+      navigatorObservers: [_ContextObserver(_refreshSessionContext)],
     );
   }
 }
@@ -201,15 +279,6 @@ void _reportIssue(String operation, Object error, StackTrace stack) {
       library: 'gasione',
     ),
   );
-}
-
-final class _CallbackRestorer implements AuthRestorer {
-  _CallbackRestorer(this._restore);
-  final Future<AuthStatus> Function() _restore;
-  Future<AuthStatus>? _pending;
-  @override
-  Future<AuthStatus> restore() =>
-      _pending ??= _restore().whenComplete(() => _pending = null);
 }
 
 final class _ContextObserver extends NavigatorObserver {

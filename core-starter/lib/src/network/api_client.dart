@@ -1,28 +1,27 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gasione_core_starter/src/network/api_error_mapper.dart';
 import 'package:gasione_core_starter/src/network/api_exception.dart';
 import 'package:gasione_core_starter/src/network/interceptors/auth_interceptor.dart';
 import 'package:gasione_core_starter/src/network/interceptors/retry_interceptor.dart';
 import 'package:gasione_core_starter/src/network/interceptors/safe_log_interceptor.dart';
+import 'package:gasione_core_starter/src/network/request_retry_policy.dart';
 import 'package:gasione_core_starter/src/storage/session_store.dart';
 import 'package:gasione_core_starter/src/storage/token_storage.dart';
 
 class ApiClient {
   ApiClient({
     Dio? dio,
-    Dio? refreshDio,
     TokenStorage? tokenStorage,
     String baseUrl = '',
     bool enableRetry = true,
-    bool enableLogging = kDebugMode,
+    bool enableLogging = false,
     TokenRefresher? refreshTokens,
   }) : sessionStore = SessionStore(tokenStorage ?? SecureTokenStorage()),
-       _dio = dio ?? Dio(_baseOptions(baseUrl)),
-       _refreshDio = refreshDio ?? Dio(_baseOptions(baseUrl)) {
+       _dio = dio ?? Dio(_baseOptions(baseUrl)) {
     _authInterceptor = AuthInterceptor(
       _dio,
-      _refreshDio,
       sessionStore,
       refreshTokens: refreshTokens,
     );
@@ -38,7 +37,6 @@ class ApiClient {
 
   final Dio _dio;
   final SessionStore sessionStore;
-  final Dio _refreshDio;
   late final AuthInterceptor _authInterceptor;
 
   static BaseOptions _baseOptions(String baseUrl) {
@@ -62,13 +60,18 @@ class ApiClient {
     Map<String, Object?>? headers,
     CancelToken? cancelToken,
     bool authenticated = true,
+    RequestRetryPolicy retryPolicy = RequestRetryPolicy.readOnly,
   }) {
     return _jsonRequest(
       () => _dio.get<dynamic>(
         path,
         queryParameters: queryParameters,
         cancelToken: cancelToken,
-        options: _options(authenticated, headers: headers),
+        options: _options(
+          authenticated,
+          headers: headers,
+          retryPolicy: retryPolicy,
+        ),
       ),
     );
   }
@@ -120,13 +123,17 @@ class ApiClient {
     Map<String, Object?>? headers,
     CancelToken? cancelToken,
     bool authenticated = true,
+    RequestRetryPolicy retryPolicy = RequestRetryPolicy.readOnly,
   }) => _guard(() async {
     final response = await _dio.get<List<int>>(
       path,
       queryParameters: queryParameters,
       cancelToken: cancelToken,
-      options: _options(authenticated, headers: headers)
-        ..responseType = ResponseType.bytes,
+      options: _options(
+        authenticated,
+        headers: headers,
+        retryPolicy: retryPolicy,
+      )..responseType = ResponseType.bytes,
     );
     final bytes = response.data;
     if (bytes == null || bytes.isEmpty) {
@@ -198,6 +205,7 @@ class ApiClient {
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
     bool authenticated = true,
+    RequestRetryPolicy retryPolicy = RequestRetryPolicy.readOnly,
   }) {
     return _guard(() async {
       await _dio.download(
@@ -206,7 +214,7 @@ class ApiClient {
         queryParameters: queryParameters,
         cancelToken: cancelToken,
         onReceiveProgress: onReceiveProgress,
-        options: _options(authenticated),
+        options: _options(authenticated, retryPolicy: retryPolicy),
       );
     });
   }
@@ -242,6 +250,7 @@ class ApiClient {
     Map<String, Object?>? headers,
     String? contentType,
     Set<int> acceptedStatusCodes = const {},
+    RequestRetryPolicy retryPolicy = RequestRetryPolicy.never,
   }) {
     return Options(
       headers: headers,
@@ -252,14 +261,14 @@ class ApiClient {
                 status != null &&
                 ((status >= 200 && status < 300) ||
                     acceptedStatusCodes.contains(status)),
-      extra: {if (!authenticated) AuthInterceptor.skipAuthKey: true},
+      extra: {
+        if (!authenticated) AuthInterceptor.skipAuthKey: true,
+        RetryInterceptor.policyKey: retryPolicy,
+      },
     );
   }
 
   void close() {
     _dio.close(force: true);
-    if (!identical(_dio, _refreshDio)) {
-      _refreshDio.close(force: true);
-    }
   }
 }

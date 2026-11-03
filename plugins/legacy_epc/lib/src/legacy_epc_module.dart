@@ -22,7 +22,7 @@ import 'legacy_business_context_bridge.dart';
 /// This module never initializes Firebase, platform services, or an app shell.
 /// Metadata and push access reference the instances supplied by the host.
 class LegacyEpcModule extends ChangeNotifier
-    implements BusinessContextProvider {
+    implements BusinessContextProvider, AuthRestorer {
   LegacyEpcModule({
     required SharedPreferences preferences,
     required AppRuntime runtime,
@@ -33,6 +33,7 @@ class LegacyEpcModule extends ChangeNotifier
     required this._directoryUrl,
     required this._directoryToken,
     this.onError,
+    this.onAuthenticatedAreaReady,
   }) {
     _preferences = preferences;
     _bridge = LegacyBusinessContextBridge(
@@ -40,6 +41,7 @@ class LegacyEpcModule extends ChangeNotifier
       businessContextChanged,
       isActive: () => !_disposed,
     );
+    Config.onAuthenticatedAreaReady = onAuthenticatedAreaReady;
     Config.runtime = runtime;
     Config.notifications = notifications;
     Config.navigatorKey = navigatorKey;
@@ -52,6 +54,7 @@ class LegacyEpcModule extends ChangeNotifier
   final Future<String> Function() _directoryToken;
   final void Function(String operation, Object error, StackTrace stack)?
   onError;
+  final VoidCallback? onAuthenticatedAreaReady;
   bool _started = false;
   bool _disposed = false;
 
@@ -59,6 +62,7 @@ class LegacyEpcModule extends ChangeNotifier
   late final LegacyBusinessContextBridge _bridge;
   StreamSubscription<String>? _pushSubscription;
   Future<AuthStatus>? _restoration;
+  @override
   Future<AuthStatus> restore() =>
       _restoration ??= _restore().whenComplete(() => _restoration = null);
   Future<AuthStatus> _restore() async {
@@ -101,9 +105,6 @@ class LegacyEpcModule extends ChangeNotifier
     if (!_disposed) _contextChanges.add(activeContext);
   }
 
-  Color get primaryColor => Config.DEFAULT_COLOR;
-  Color get accentColor => Config.DEFAULT_ACCENT_COLOR;
-
   List<PluginPageRoute> get authPageRoutes => [
     PluginPageRoute(
       path: '/auth/company',
@@ -121,7 +122,7 @@ class LegacyEpcModule extends ChangeNotifier
 
   // TRANSITION[LEGACY-AUTH]: retain installed entry destinations until the
   // Pre-Home CR replaces them with auth-plugin pages.
-  Widget buildBusinessPage(AuthStatus status) => switch (status) {
+  Widget buildEntryPage(AuthStatus status) => switch (status) {
     AuthStatus.companyRequired => const ClientPage(),
     AuthStatus.loginRequired => const LoginPage(),
     AuthStatus.verificationRequired => VerificationPage(
@@ -148,8 +149,6 @@ class LegacyEpcModule extends ChangeNotifier
     Config.isManager = false;
     Config.switchAccount = false;
     AlertProvider.showUpdateAvailableDialog();
-    AlertProvider.showUnSafeDeviceDialog();
-    AlertProvider.showSignatureDialog();
   }
 
   void start() {
@@ -222,6 +221,9 @@ class LegacyEpcModule extends ChangeNotifier
   @override
   void dispose() {
     _disposed = true;
+    if (identical(Config.onAuthenticatedAreaReady, onAuthenticatedAreaReady)) {
+      Config.onAuthenticatedAreaReady = null;
+    }
     unawaited(_pushSubscription?.cancel());
     unawaited(_contextChanges.close());
     super.dispose();

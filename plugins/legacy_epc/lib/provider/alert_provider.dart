@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:epeoplecare/config.dart';
-import 'package:epeoplecare/view/shared/message_unsafe.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -146,53 +145,4 @@ class AlertProvider {
     return true;
   }
 
-  static Future<bool> showUnSafeDeviceDialog() async {
-    if(Config.isSignatureValid && Config.unsafeDevice) {
-      BuildContext context = Config.navigatorKey.currentContext!;
-      Future.delayed(const Duration(seconds: 1)).then((value) async {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MessageUnsafePage(
-            ),
-          ),
-        );
-      });
-    }
-
-    return true;
-  }
-
-  static Future<bool> showSignatureDialog() async {
-    if(!Config.isSignatureValid) {
-      BuildContext context = Config.navigatorKey.currentContext!;
-      Future.delayed(const Duration(seconds: 1)).then((value) async {
-        AlertDialog alert = AlertDialog(
-          title: Text("Invalid Application".tr()),
-          content: Text("InvalidApplicationMessage".tr()),
-          actions: [
-            TextButton(
-              child: Text("Exit".tr()),
-              onPressed: () {
-                exit(0);
-              },
-            ),
-          ],
-        );
-
-        await showDialog(
-          barrierDismissible: false,
-          context: context,
-          builder: (BuildContext context) {
-            return PopScope(
-              canPop: false,
-              child: alert
-            );
-          },
-        );
-      });
-    }
-
-    return true;
-  }
 }

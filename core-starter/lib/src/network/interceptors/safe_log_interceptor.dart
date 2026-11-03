@@ -1,24 +1,27 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+/// Diagnostic metadata only. URLs (including path parameters), headers, bodies,
+/// and exception messages can all contain credentials or employee information.
 class SafeLogInterceptor extends Interceptor {
-  static const _sensitiveKeys = {
-    'authorization',
-    'cookie',
-    'password',
-    'accesstoken',
-    'refreshtoken',
-    'access_token',
-    'refresh_token',
+  SafeLogInterceptor({void Function(String)? log}) : _log = log ?? debugPrint;
+
+  final void Function(String) _log;
+
+  String _method(RequestOptions request) => switch (request.method) {
+    'GET' ||
+    'HEAD' ||
+    'POST' ||
+    'PUT' ||
+    'PATCH' ||
+    'DELETE' ||
+    'OPTIONS' => request.method,
+    _ => 'REQUEST',
   };
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    _log(
-      '--> ${options.method} ${options.uri}\n'
-      'headers: ${_redact(options.headers)}\n'
-      'data: ${_redact(options.data)}',
-    );
+    _log('--> ${_method(options)}');
     handler.next(options);
   }
 
@@ -27,44 +30,16 @@ class SafeLogInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    _log(
-      '<-- ${response.statusCode} ${response.requestOptions.uri}\n'
-      'data: ${_redact(response.data)}',
-    );
+    _log('<-- ${_method(response.requestOptions)} ${response.statusCode}');
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     _log(
-      '<-- ERROR ${err.response?.statusCode ?? '-'} '
-      '${err.requestOptions.uri}\n'
-      'data: ${_redact(err.response?.data)}',
+      '<-- ${_method(err.requestOptions)} ERROR '
+      '${err.response?.statusCode ?? '-'} ${err.type.name}',
     );
     handler.next(err);
-  }
-
-  Object? _redact(Object? value) {
-    if (value is FormData) {
-      return '<multipart form data>';
-    }
-    if (value is Map) {
-      return value.map((key, item) {
-        final normalizedKey = key.toString().toLowerCase();
-        final isSensitive = _sensitiveKeys.any(normalizedKey.contains);
-        return MapEntry(key, isSensitive ? '<redacted>' : _redact(item));
-      });
-    }
-    if (value is Iterable) {
-      return value.map(_redact).toList(growable: false);
-    }
-    return value;
-  }
-
-  void _log(String message) {
-    final output = message.length > 3000
-        ? '${message.substring(0, 3000)}…'
-        : message;
-    debugPrint(output);
   }
 }

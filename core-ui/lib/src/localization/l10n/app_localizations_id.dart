@@ -206,4 +206,68 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get loadMore => 'Muat lebih banyak';
+
+  @override
+  String get unsafeDeviceTitle => 'Perangkat tidak memenuhi standar keamanan';
+
+  @override
+  String get unsafeDeviceMessage =>
+      'GASI:One memerlukan perangkat fisik tanpa root atau jailbreak, dengan mode pengembang dinonaktifkan, dan aplikasi terpasang di penyimpanan internal.\n\nGunakan perangkat lain jika perangkat di-root, di-jailbreak, atau berupa emulator. Nonaktifkan mode pengembang, atau pasang ulang di penyimpanan internal bila diperlukan.\n\nHubungi administrator jika membutuhkan bantuan.';
+
+  @override
+  String get invalidApplicationTitle => 'Aplikasi tidak valid';
+
+  @override
+  String get invalidApplicationMessage =>
+      'Signature aplikasi tidak cocok. Silakan pasang ulang aplikasi dari toko resmi.';
+
+  @override
+  String get exitApplication => 'Keluar';
+
+  @override
+  String get unsafeDeviceIntroduction =>
+      'Demi keamanan data Anda, GASI:One hanya berjalan pada perangkat yang memenuhi persyaratan berikut:';
+
+  @override
+  String get deviceIntegrityRequirement =>
+      'Tidak di-root, di-jailbreak, atau berupa emulator';
+
+  @override
+  String get developerModeRequirement => 'Mode pengembang dinonaktifkan';
+
+  @override
+  String get internalStorageRequirement => 'Terpasang di penyimpanan internal';
+
+  @override
+  String get deviceRemediationTitle => 'Silakan:';
+
+  @override
+  String get deviceIntegrityRemediation =>
+      'Gunakan perangkat lain jika di-root, di-jailbreak, atau berupa emulator';
+
+  @override
+  String get developerModeRemediation =>
+      'Nonaktifkan mode pengembang jika masih aktif';
+
+  @override
+  String get internalStorageRemediation =>
+      'Pasang ulang di penyimpanan internal jika terpasang di kartu SD';
+
+  @override
+  String get deviceAdministratorHelp =>
+      'Atau hubungi Administrator jika diperlukan.';
+
+  @override
+  String get deviceRequirementMet => 'Persyaratan terpenuhi';
+
+  @override
+  String get deviceRequirementNotMet => 'Persyaratan tidak terpenuhi';
+
+  @override
+  String get deviceRequirementUnavailable => 'Hasil pemeriksaan tidak tersedia';
+
+  @override
+  String appCopyright(int year) {
+    return '© $year GASI:One';
+  }
 }

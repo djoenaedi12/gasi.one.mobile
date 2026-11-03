@@ -427,6 +427,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Load more'**
   String get loadMore;
+
+  /// No description provided for @unsafeDeviceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Does Not Meet Security Standard'**
+  String get unsafeDeviceTitle;
+
+  /// No description provided for @unsafeDeviceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'GASI:One requires a physical device without root or jailbreak, with developer mode disabled, and the app installed in internal storage.\n\nUse another device if it is rooted, jailbroken, or an emulator. Disable developer mode, or reinstall in internal storage if needed.\n\nContact your administrator if you need help.'**
+  String get unsafeDeviceMessage;
+
+  /// No description provided for @invalidApplicationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid application'**
+  String get invalidApplicationTitle;
+
+  /// No description provided for @invalidApplicationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The application signature is invalid. Please reinstall the application from the official store.'**
+  String get invalidApplicationMessage;
+
+  /// No description provided for @exitApplication.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get exitApplication;
+
+  /// No description provided for @unsafeDeviceIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'For your data’s safety, GASI:One only runs on devices that meet these requirements:'**
+  String get unsafeDeviceIntroduction;
+
+  /// No description provided for @deviceIntegrityRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Not rooted, jailbroken, or an emulator'**
+  String get deviceIntegrityRequirement;
+
+  /// No description provided for @developerModeRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer mode turned off'**
+  String get developerModeRequirement;
+
+  /// No description provided for @internalStorageRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed in internal storage'**
+  String get internalStorageRequirement;
+
+  /// No description provided for @deviceRemediationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please:'**
+  String get deviceRemediationTitle;
+
+  /// No description provided for @deviceIntegrityRemediation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use another device if rooted, jailbroken, or an emulator'**
+  String get deviceIntegrityRemediation;
+
+  /// No description provided for @developerModeRemediation.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off developer mode if it is on'**
+  String get developerModeRemediation;
+
+  /// No description provided for @internalStorageRemediation.
+  ///
+  /// In en, this message translates to:
+  /// **'Reinstall in internal storage if installed on SD card'**
+  String get internalStorageRemediation;
+
+  /// No description provided for @deviceAdministratorHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Or contact Administrator if needed.'**
+  String get deviceAdministratorHelp;
+
+  /// No description provided for @deviceRequirementMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Requirement met'**
+  String get deviceRequirementMet;
+
+  /// No description provided for @deviceRequirementNotMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Requirement not met'**
+  String get deviceRequirementNotMet;
+
+  /// No description provided for @deviceRequirementUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Check result unavailable'**
+  String get deviceRequirementUnavailable;
+
+  /// No description provided for @appCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'© {year} GASI:One'**
+  String appCopyright(int year);
 }
 
 class _AppLocalizationsDelegate

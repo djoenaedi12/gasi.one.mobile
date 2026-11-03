@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:gasione_core_api/gasione_core_api.dart';
 import 'package:gasione_core_ui/gasione_core_ui.dart';
 
-/// Generic entry gate with retry, independent of feature splash presentation.
-/// This gate stays when the auth implementation and its pages move to a plugin.
+/// After device access is accepted, restores the session and opens its first page.
+/// The AuthRestorer owns session details; buildDestination owns the status/page map.
+/// This gate stays when the legacy implementation moves to an auth plugin.
 class AppEntryPage extends StatefulWidget {
   const AppEntryPage({
     super.key,
     required this.auth,
     required this.buildDestination,
     this.onError,
+    this.appVersion,
   });
 
   final AuthRestorer auth;
+  final String? appVersion;
   final Widget Function(BuildContext context, AuthStatus status)
   buildDestination;
   final void Function(String operation, Object error, StackTrace stack)?
@@ -29,10 +32,10 @@ class _AppEntryPageState extends State<AppEntryPage> {
   @override
   void initState() {
     super.initState();
-    _restoration = _restore();
+    _restoration = _restoreSession();
   }
 
-  Future<AuthStatus> _restore() async {
+  Future<AuthStatus> _restoreSession() async {
     _restoring = true;
     try {
       return await widget.auth.restore();
@@ -46,7 +49,7 @@ class _AppEntryPageState extends State<AppEntryPage> {
 
   void _retry() {
     if (_restoring) return;
-    final attempt = _restore();
+    final attempt = _restoreSession();
     setState(() {
       _restoration = attempt;
     });
@@ -56,34 +59,16 @@ class _AppEntryPageState extends State<AppEntryPage> {
   Widget build(BuildContext context) => FutureBuilder<AuthStatus>(
     future: _restoration,
     builder: (context, snapshot) {
-      final strings = AppLocalizations.of(context);
       if (snapshot.connectionState != ConnectionState.done) {
-        return Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(strings.preparingApp),
-                ],
-              ),
-            ),
-          ),
-        );
+        return AppSplashPage.loading(version: widget.appVersion);
       }
       if (snapshot.hasError) {
-        return Scaffold(
-          body: SafeArea(
-            child: AppErrorView(
-              message: strings.appPreparationFailed,
-              actionLabel: strings.retry,
-              onAction: _retry,
-            ),
-          ),
+        return AppSplashPage.failure(
+          version: widget.appVersion,
+          onRetry: _retry,
         );
       }
+      // A successful restore returns the next required step, not necessarily Home.
       return widget.buildDestination(context, snapshot.requireData);
     },
   );

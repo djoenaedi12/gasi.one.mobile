@@ -78,13 +78,20 @@ import 'bootstrap.dart';
 void main() => bootstrap();
 ```
 
-`StartupGate` owns initialization/retry and disposal. `GasioneApp` composes one
+`StartupGate` owns initialization/retry and disposal. `DeviceAccessGate` checks
+device access before the feature shell or session restore can start. `GasioneApp` composes one
 MaterialApp, theme/localization, shared HTTP/session services, plugin routes,
 and the legacy fallback. Main contains only `plugins/legacy_epc`; all other
 plugin packages and their wiring belong to the combined CR branch. The generic `AppEntryPage` restores installed state;
 authentication pages and all attendance feature routes still belong to legacy.
 The five-second splash, migrated auth UI, and the three attendance vertical
 slices belong to the combined CR branch.
+
+For the function-by-function path from launch to the first page, read
+[Startup flow](docs/startup-flow.md). Shared color tokens, themes, and UI
+ownership are documented in [Design system](docs/design-system.md). `core-ui/AppTheme`
+is the single theme factory for startup, device access, and the application shell;
+platform-app mounts AppTheme.light() directly.
 
 See [Foundation and CR boundaries](docs/mobile-cr-foundation.md) for prerequisite
 coverage and the local branch/worktree handoff. See [Platform foundation](docs/platform-foundation.md)
@@ -143,7 +150,8 @@ The repository checks these import boundaries with
 - Shared Preferences and Flutter Secure Storage
 - Geolocator and Geocoding
 - `core-ui` localization and design-system packages
-- Easy Localization and Adaptive Theme in the current legacy runtime
+- Shared blocking loading through core-ui/AppLoading (flutter_easyloading)
+- Easy Localization in the current legacy runtime
 - Android Gradle Plugin 9, Kotlin, and Java 17
 - Swift/iOS 15 deployment target
 
@@ -315,9 +323,11 @@ Remote or local data source
 core-starter infrastructure
 ```
 
-Each plugin exposes only its integration surface. When the new platform shell
-is introduced, plugin routes and menus will be composed through `AppPlugin`
-rather than copied into the host.
+Each plugin exposes only its integration surface. The platform shell uses
+`PluginComposition` to collect compiled plugin page
+routes, pickers, localization, menus, and optional lifecycle/notification hooks.
+Main keeps legacy routes as its fallback; business plugin activation remains in
+the CR. See [Main readiness foundation](docs/main-readiness-foundation.md).
 
 Authentication is a special bootstrap capability because session restoration
 and route protection depend on it. The production auth migration must cover

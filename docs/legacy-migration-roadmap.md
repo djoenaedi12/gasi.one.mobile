@@ -113,22 +113,15 @@ route or menu entry
 Avoid migrating all models first, then all repositories, then all pages. That
 creates a long period in which nothing is releasable and rollback is unclear.
 
-### 3.3 Preserve legacy appearance until route ownership moves
+### 3.3 Use the shared theme across all routes
 
-An unmigrated page must keep the legacy theme, tenant colors, copy, layout, and
-interaction behavior. The new design system applies only to routes that have
-explicitly moved to a new owner.
+`core-ui/AppTheme` is the single theme factory, including routes still served by
+legacy. The platform mounts its light theme directly;
+legacy does not supply a separate global theme or tenant color override.
 
-After the new shell becomes the root, the visual boundary should be explicit:
-
-```text
-Application shell
-├── migrated route -> core-ui and the new design system
-└── legacy route   -> LegacyPageShell and legacy tenant colors
-```
-
-The compatibility shell may internally read `Config` while the legacy runtime
-exists. New feature presentation code must not do so.
+Preserve legacy business behavior and installed data while moving each feature.
+Styles explicitly set inside a legacy widget remain part of that widget's
+migration work; new UI consumes core-ui components and theme tokens directly.
 
 ### 3.4 Dependencies point toward stable contracts
 
