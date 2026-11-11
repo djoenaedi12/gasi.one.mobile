@@ -26,17 +26,17 @@ class AppSplashPage extends StatelessWidget {
     final strings = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const SizedBox(height: AppSpacing.lg),
-                    Column(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: 20,
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Image.asset(
@@ -65,20 +65,16 @@ class AppSplashPage extends StatelessWidget {
                         ],
                       ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.lg),
-                      child: version == null
-                          ? const SizedBox(height: AppSpacing.lg)
-                          : AppText(
-                              strings.appVersion(version!),
-                              textAlign: TextAlign.center,
-                              tone: AppTextTone.muted,
-                            ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              if (version != null)
+                AppText(
+                  strings.appVersion(version!),
+                  textAlign: TextAlign.center,
+                  tone: AppTextTone.muted,
+                ),
+            ],
           ),
         ),
       ),

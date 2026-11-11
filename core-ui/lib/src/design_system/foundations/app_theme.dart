@@ -40,7 +40,7 @@ abstract final class AppTheme {
       inversePrimary: palette.primary,
       surfaceTint: palette.primary,
     );
-    final base = ThemeData(useMaterial3: true, colorScheme: colors);
+    final base = ThemeData(useMaterial3: false, colorScheme: colors);
     final textTheme = AppTypography.apply(base.textTheme);
     final isDark = palette.brightness == Brightness.dark;
 

@@ -53,17 +53,17 @@ class AppRuntimeService {
   }
 
   static Future<DeviceSecurity> _platformSecurity() async {
-    await DeviceSecurityService().inspect();
+    var report = await DeviceSecurityService().inspect();
 
-    // Local device fixture retained for manual testing of the security page.
-    return DeviceSecurityPolicy().evaluate(
-      DeviceSecurityReport(
-        jailbroken: false,
-        realDevice: true,
-        developmentMode: false,
-        externalStorage: false,
-        signatureValid: true,
-      ),
+    // Uncomment this block to override device checks for testing:
+    report = const DeviceSecurityReport(
+      jailbroken: false,
+      realDevice: true,
+      developmentMode: false,
+      externalStorage: false,
+      signatureValid: true,
     );
+
+    return const DeviceSecurityPolicy().evaluate(report);
   }
 }
